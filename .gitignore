@@ -1,0 +1,14 @@
+# Ignore local Apps Script / misc files – GitHub Pages only needs index.html
+Index.html
+doGet.js
+config.js
+code.js
+populateCheckboxes.js
+testOpenForm.js
+*.gs
+*.ts
+*.js
+!.eslintrc.js
+!.prettierrc.js
+
+
