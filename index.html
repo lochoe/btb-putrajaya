@@ -279,7 +279,8 @@
         const pathMatch = rawUrl.match(/\/d\/([-\w]{10,})/);
         const fileId = idParamMatch ? idParamMatch[1] : pathMatch ? pathMatch[1] : null;
         if (!fileId) return rawUrl;
-        return 'https://drive.google.com/uc?export=view&id=' + fileId;
+        // Use drive.usercontent direct download URL which works better for <img src> from external origins
+        return 'https://drive.usercontent.google.com/download?id=' + fileId + '&export=view';
       }
 
       function loadData() {
