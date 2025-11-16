@@ -278,9 +278,12 @@
         const idParamMatch = rawUrl.match(/[?&]id=([^&]+)/);
         const pathMatch = rawUrl.match(/\/d\/([-\w]{10,})/);
         const fileId = idParamMatch ? idParamMatch[1] : pathMatch ? pathMatch[1] : null;
-        if (!fileId) return rawUrl;
-        // Use drive.usercontent direct download URL which works better for <img src> from external origins
-        return 'https://drive.usercontent.google.com/download?id=' + fileId + '&export=view';
+        if (!fileId) return '';
+        // Proxy melalui Apps Script supaya gambar boleh di-embed dari GitHub Pages
+        return (
+          'https://script.google.com/macros/s/AKfycbxSq3Lz36_hjgFW6EDJkJmBdCsXWLDWIwGaI0U9CBdXvTn2F-Xtu_VifDU5CYZjj-SYig/exec?id=' +
+          fileId
+        );
       }
 
       function loadData() {
