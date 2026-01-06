@@ -367,5 +367,41 @@ const API = {
       throw new Error('APPS_SCRIPT_URL not configured');
     }
     return callAppsScriptAPIPOST('addPlayer', { playerData: playerData });
+  },
+
+  /**
+   * Upload player image (POST request)
+   */
+  uploadPlayerImage: async function(fileData, playerName, rowIndex) {
+    if (!APPS_SCRIPT_URL) {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .uploadPlayerImage(fileData, playerName, rowIndex);
+        });
+      }
+      throw new Error('APPS_SCRIPT_URL not configured');
+    }
+    return callAppsScriptAPIPOST('uploadPlayerImage', { fileData: fileData, playerName: playerName, rowIndex: rowIndex });
+  },
+
+  /**
+   * Upload IC document (POST request)
+   */
+  uploadICDocument: async function(fileData, playerName, rowIndex) {
+    if (!APPS_SCRIPT_URL) {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .uploadICDocument(fileData, playerName, rowIndex);
+        });
+      }
+      throw new Error('APPS_SCRIPT_URL not configured');
+    }
+    return callAppsScriptAPIPOST('uploadICDocument', { fileData: fileData, playerName: playerName, rowIndex: rowIndex });
   }
 };

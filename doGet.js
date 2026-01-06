@@ -227,6 +227,26 @@ function doPost(e) {
           var newPlayerData = postData.playerData || postData;
           result = addPlayer(newPlayerData);
           break;
+        case 'uploadPlayerImage':
+          var fileData = postData.fileData;
+          var playerName = postData.playerName;
+          var rowIndex = postData.rowIndex ? parseInt(postData.rowIndex) : null;
+          if (typeof uploadPlayerImage === 'function') {
+            result = uploadPlayerImage(fileData, playerName, rowIndex);
+          } else {
+            result = { success: false, error: 'uploadPlayerImage function not found' };
+          }
+          break;
+        case 'uploadICDocument':
+          var fileData = postData.fileData;
+          var playerName = postData.playerName;
+          var rowIndex = postData.rowIndex ? parseInt(postData.rowIndex) : null;
+          if (typeof uploadICDocument === 'function') {
+            result = uploadICDocument(fileData, playerName, rowIndex);
+          } else {
+            result = { success: false, error: 'uploadICDocument function not found' };
+          }
+          break;
         default:
           result = { success: false, error: 'Unknown action: ' + action };
       }
@@ -357,7 +377,8 @@ function getPlayersListContent() {
         achievement: row[9],
         parentConsent: row[10],
         imageUrl: transformImageUrl(row[11]), // Handle missing or non-standard image URLs
-        icNumber: row[12] || '' // IC number (may not exist in old data)
+        icNumber: row[12] || '', // IC number (may not exist in old data)
+        icDocumentUrl: row[13] || '' // IC Document URL (PDF/image) - column 13
       };
 
       // Log a few first rows for verification
@@ -463,7 +484,8 @@ function getPlayerById(rowIndex) {
       achievement: row[9],
       parentConsent: row[10],
       imageUrl: transformImageUrl(row[11]),
-      icNumber: row[12] || ''
+      icNumber: row[12] || '',
+      icDocumentUrl: row[13] || '' // IC Document URL (PDF/image) - column 13
     };
 
     Logger.log('getPlayerById: returning player ' + rowIndex);
@@ -509,6 +531,9 @@ function updatePlayer(rowIndex, playerData) {
     var currentRow = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
     
     // Update row data (preserve timestamp[0] and email[1])
+    // If imageUrl provided in playerData, use it; otherwise preserve original
+    var imageUrl = playerData.imageUrl || currentRow[11] || '';
+    
     var newRow = [
       currentRow[0], // timestamp - preserve original
       playerData.email || currentRow[1], // email - update if provided, otherwise preserve
@@ -521,8 +546,9 @@ function updatePlayer(rowIndex, playerData) {
       playerData.skillLevel || '',
       playerData.achievement || '',
       playerData.parentConsent || '',
-      currentRow[11] || '', // imageUrl - preserve original
-      playerData.icNumber || '' // icNumber - new column
+      imageUrl, // imageUrl - update if provided, otherwise preserve
+      playerData.icNumber || currentRow[12] || '', // icNumber - update if provided, otherwise preserve
+      playerData.icDocumentUrl || currentRow[13] || '' // icDocumentUrl - update if provided, otherwise preserve (column 13)
     ];
 
     // Write to sheet (starting from column 1)
@@ -632,8 +658,9 @@ function addPlayer(playerData) {
       playerData.skillLevel || '',
       playerData.achievement || '',
       playerData.parentConsent || '',
-      '', // imageUrl - empty for new player
-      playerData.icNumber || '' // icNumber
+      playerData.imageUrl || '', // imageUrl - can be set if uploaded before save
+      playerData.icNumber || '', // icNumber
+      playerData.icDocumentUrl || '' // icDocumentUrl - can be set if uploaded before save (column 13)
     ];
 
     // Append new row

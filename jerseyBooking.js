@@ -236,3 +236,142 @@ function submitJerseyBooking(formData) {
     return { success: false, message: 'Ralat: ' + e.toString() };
   }
 }
+
+/**
+ * uploadPlayerImage
+ * What: Upload player image ke Google Drive folder dan return direct image URL.
+ * Input: fileData: {name: string, type: string, data: string (base64)}, playerName: string, rowIndex: number (optional)
+ * Output: {success: boolean, fileUrl: string, message?: string}
+ * Side effects: creates file in Google Drive
+ * Errors: returns {success: false, message: "..."}
+ */
+function uploadPlayerImage(fileData, playerName, rowIndex) {
+  try {
+    if (!fileData || !fileData.data) {
+      return { success: false, message: 'Tiada fail dipilih.' };
+    }
+
+    var folderId = typeof CONFIG !== 'undefined' && CONFIG.folderId;
+    if (!folderId) {
+      return { success: false, message: 'Configuration error: folderId missing.' };
+    }
+
+    var folder = DriveApp.getFolderById(folderId);
+    
+    // Create subfolder for player images if doesn't exist
+    var imagesFolder;
+    try {
+      var folders = folder.getFoldersByName('Gambar Pelatih');
+      if (folders.hasNext()) {
+        imagesFolder = folders.next();
+      } else {
+        imagesFolder = folder.createFolder('Gambar Pelatih');
+      }
+    } catch (e) {
+      imagesFolder = folder; // Fallback to main folder
+    }
+
+    // Convert base64 to blob
+    var blob = Utilities.newBlob(Utilities.base64Decode(fileData.data), fileData.type, fileData.name);
+
+    // Generate filename: [PlayerName]_[Timestamp].ext
+    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmmss');
+    var sanitizedName = (playerName || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+    var fileExtension = fileData.name.split('.').pop() || 'jpg';
+    var fileName = sanitizedName + '_' + timestamp + '.' + fileExtension;
+
+    // Upload file
+    var file = imagesFolder.createFile(blob);
+    file.setName(fileName);
+    
+    // Set sharing to "Anyone with the link can view"
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    // Get direct image URL
+    var fileId = file.getId();
+    var directImageUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    
+    Logger.log('uploadPlayerImage: File uploaded - ' + fileName + ', URL: ' + directImageUrl);
+    
+    return {
+      success: true,
+      fileUrl: directImageUrl,
+      fileId: fileId
+    };
+  } catch (e) {
+    Logger.log('uploadPlayerImage ERROR: ' + e);
+    return { success: false, message: 'Ralat upload: ' + e.toString() };
+  }
+}
+
+/**
+ * uploadICDocument
+ * What: Upload IC document (PDF/image) ke Google Drive folder.
+ * Input: fileData: {name: string, type: string, data: string (base64)}, playerName: string, rowIndex: number (optional)
+ * Output: {success: boolean, fileUrl: string, message?: string}
+ * Side effects: creates file in Google Drive
+ * Errors: returns {success: false, message: "..."}
+ */
+function uploadICDocument(fileData, playerName, rowIndex) {
+  try {
+    if (!fileData || !fileData.data) {
+      return { success: false, message: 'Tiada fail dipilih.' };
+    }
+
+    var folderId = typeof CONFIG !== 'undefined' && CONFIG.folderId;
+    if (!folderId) {
+      return { success: false, message: 'Configuration error: folderId missing.' };
+    }
+
+    var folder = DriveApp.getFolderById(folderId);
+    
+    // Create subfolder for IC documents if doesn't exist
+    var icFolder;
+    try {
+      var folders = folder.getFoldersByName('Dokumen IC Pemain');
+      if (folders.hasNext()) {
+        icFolder = folders.next();
+      } else {
+        icFolder = folder.createFolder('Dokumen IC Pemain');
+      }
+    } catch (e) {
+      icFolder = folder; // Fallback to main folder
+    }
+
+    // Convert base64 to blob
+    var blob = Utilities.newBlob(Utilities.base64Decode(fileData.data), fileData.type, fileData.name);
+
+    // Generate filename: IC_[PlayerName]_[Timestamp].ext
+    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmmss');
+    var sanitizedName = (playerName || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+    var fileExtension = fileData.name.split('.').pop() || 'pdf';
+    var fileName = 'IC_' + sanitizedName + '_' + timestamp + '.' + fileExtension;
+
+    // Upload file
+    var file = icFolder.createFile(blob);
+    file.setName(fileName);
+    
+    // Set sharing to "Anyone with the link can view"
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    // Get file URL (for PDF, return normal URL; for image, return direct image URL)
+    var fileId = file.getId();
+    var fileUrl = file.getUrl();
+    
+    // If image, return direct image URL
+    if (fileData.type && fileData.type.startsWith('image/')) {
+      fileUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    }
+    
+    Logger.log('uploadICDocument: File uploaded - ' + fileName + ', URL: ' + fileUrl);
+    
+    return {
+      success: true,
+      fileUrl: fileUrl,
+      fileId: fileId
+    };
+  } catch (e) {
+    Logger.log('uploadICDocument ERROR: ' + e);
+    return { success: false, message: 'Ralat upload: ' + e.toString() };
+  }
+}

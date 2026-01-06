@@ -407,6 +407,19 @@
               </div>
             </div>
 
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">
+                  Gambar Pelatih
+                </label>
+                <input type="file" id="playerImage" class="form-input" accept="image/*" />
+                <div class="form-help">Upload gambar pelatih (JPG, PNG, maksimum 5MB)</div>
+                <div id="imagePreview" style="margin-top: 12px;">
+                  <img id="imagePreviewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #d1d5db; display: none;" />
+                </div>
+                <div id="currentImageInfo" style="margin-top: 8px; font-size: 0.8rem; color: #6b7280;"></div>
+              </div>
+            </div>
+
             <div class="form-actions">
               <button type="button" class="btn btn-secondary" id="cancelEditBtn" onclick="cancelEdit()" style="display: none;">Batal</button>
               <button type="button" class="btn btn-edit" id="editBtn" onclick="enableEdit()">Edit Maklumat</button>
@@ -416,71 +429,22 @@
         </div>
       </div>
 
-      <!-- Jersey Booking Section -->
-      <div class="section" id="jerseySection">
-        <h2 class="section-title">Tempahan Baju</h2>
+      <!-- Documents Section -->
+      <div class="section" id="documentsSection">
+        <h2 class="section-title">Dokumen Pemain</h2>
 
-        <div class="bank-info">
-          <h3>Maklumat Bank untuk Bayaran</h3>
-          <p><strong>Bank:</strong> AFFIN BANK</p>
-          <p><strong>No. Akaun:</strong> 1004 9002 1285</p>
-          <p><strong>Nama Akaun:</strong> STICK AND BALL HOCKEY CLUB</p>
-          <p><strong>Remark:</strong> Nama Anak</p>
+        <div class="form-group">
+          <label class="form-label">
+            Salinan IC Pemain <span class="required">*</span>
+          </label>
+          <input type="file" id="icDocument" class="form-input" accept="image/*,.pdf" />
+          <div class="form-help">Upload salinan IC pemain (Gambar atau PDF, maksimum 10MB)</div>
+          <div id="icPreview" style="margin-top: 12px;">
+            <div id="icPreviewContent"></div>
+          </div>
+          <div id="currentICInfo" style="margin-top: 8px; font-size: 0.8rem; color: #6b7280;"></div>
+          <button type="button" class="btn btn-primary" id="uploadICBtn" onclick="uploadICDocument()" style="margin-top: 12px;">Upload IC</button>
         </div>
-
-        <form id="jerseyForm">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
-            <div class="form-group">
-              <label class="form-label">
-                Saiz Baju <span class="required">*</span>
-              </label>
-              <select id="jerseySize" class="form-select" required>
-                <option value="">-- Pilih Saiz --</option>
-                <option value="XS">XS</option>
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
-                <option value="XXL">XXL</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">
-                Nama di Jersi <span class="required">*</span>
-              </label>
-              <input type="text" id="jerseyName" class="form-input" required maxlength="20" />
-              <div class="form-help">Maksimum 20 aksara</div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">
-                Nombor Jersi <span class="required">*</span>
-              </label>
-              <input type="number" id="jerseyNumber" class="form-input" required min="30" max="999" />
-              <div class="form-help">Nombor antara 30 hingga 999 (mesti unik)</div>
-              <div class="jersey-number-info" id="jerseyInfo" style="display: none;">
-                <strong>Nombor yang sudah dipesan:</strong>
-                <div class="taken-numbers" id="takenNumbersList"></div>
-              </div>
-            </div>
-
-            <div class="form-group" style="grid-column: 1 / -1;">
-              <label class="form-label">
-                Resit Bayaran <span class="required">*</span>
-              </label>
-              <input type="file" id="receiptFile" class="form-input" accept="image/*,.pdf" required />
-              <div class="form-help">Upload resit bayaran (Gambar atau PDF)</div>
-              <div id="receiptPreview" style="margin-top: 8px; display: none;">
-                <img id="receiptPreviewImg" src="" alt="Receipt preview" style="max-width: 200px; border-radius: 8px; border: 1px solid #d1d5db;" />
-              </div>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" id="submitJerseyBtn">Hantar Tempahan</button>
-          </div>
-        </form>
       </div>
     </div>
 
@@ -496,7 +460,6 @@
       var currentRowIndex = null;
       var isEditMode = false;
       var isNewPlayer = false;
-      var takenNumbers = [];
       var originalFormData = {};
 
       /**
@@ -528,12 +491,10 @@
           document.getElementById('saveBtn').style.display = 'inline-block';
           document.getElementById('cancelEditBtn').style.display = 'inline-block';
           
-          loadTakenNumbers();
         } else if (rowIndex) {
           // Viewing/editing existing player
           currentRowIndex = parseInt(rowIndex);
           loadPlayer(currentRowIndex);
-          loadTakenNumbers();
         } else {
           showMessage('Ralat: Tiada maklumat pemain.', 'error');
         }
@@ -598,16 +559,24 @@
         document.getElementById('achievement').value = player.achievement || '';
         document.getElementById('parentConsent').value = player.parentConsent || '';
 
-        // Populate jersey form with player data
-        document.getElementById('jerseyForm').querySelector('[name="playerName"]') || 
-        (function() {
-          var hiddenInput = document.createElement('input');
-          hiddenInput.type = 'hidden';
-          hiddenInput.name = 'playerName';
-          hiddenInput.id = 'jerseyPlayerName';
-          document.getElementById('jerseyForm').appendChild(hiddenInput);
-        })();
-        document.getElementById('jerseyPlayerName').value = player.name || '';
+        // Show current image
+        if (player.imageUrl) {
+          document.getElementById('imagePreviewImg').src = player.imageUrl;
+          document.getElementById('imagePreviewImg').style.display = 'block';
+          document.getElementById('currentImageInfo').textContent = 'Gambar semasa: ' + (player.imageUrl.substring(0, 50) + '...');
+        }
+
+        // Show current IC document
+        if (player.icDocumentUrl) {
+          var icInfo = document.getElementById('currentICInfo');
+          icInfo.innerHTML = '<a href="' + player.icDocumentUrl + '" target="_blank" style="color: #2563eb;">Lihat IC Semasa</a>';
+          
+          // Show preview if image
+          if (player.icDocumentUrl.match(/\.(jpg|jpeg|png|gif)$/i)) {
+            var icPreview = document.getElementById('icPreviewContent');
+            icPreview.innerHTML = '<img src="' + player.icDocumentUrl + '" alt="IC Preview" style="max-width: 300px; border-radius: 8px; border: 1px solid #d1d5db;" />';
+          }
+        }
 
         updateDisplay();
         saveOriginalFormData();
@@ -736,7 +705,67 @@
         saveBtn.disabled = true;
         saveBtn.textContent = 'Menyimpan...';
 
-        var updatePromise;
+        // Check if new image is selected
+        var playerImageFile = document.getElementById('playerImage').files[0];
+        var imageUploadPromise = Promise.resolve(null);
+
+        if (playerImageFile) {
+          // Upload image first
+          var reader = new FileReader();
+          imageUploadPromise = new Promise(function(resolve, reject) {
+            reader.onload = function(e) {
+              var base64Data = e.target.result.split(',')[1];
+              var fileData = {
+                name: playerImageFile.name,
+                type: playerImageFile.type,
+                data: base64Data
+              };
+
+              var playerName = formData.name || 'Player';
+              var uploadPromise;
+              
+              if (typeof google !== 'undefined' && google.script && google.script.run) {
+                uploadPromise = new Promise(function(resolve2, reject2) {
+                  google.script.run
+                    .withSuccessHandler(resolve2)
+                    .withFailureHandler(reject2)
+                    .uploadPlayerImage(fileData, playerName, currentRowIndex);
+                });
+              } else if (typeof API !== 'undefined' && API.uploadPlayerImage) {
+                uploadPromise = API.uploadPlayerImage(fileData, playerName, currentRowIndex);
+              } else {
+                reject(new Error('API tidak tersedia'));
+                return;
+              }
+
+              uploadPromise
+                .then(function(result) {
+                  var finalResult = result;
+                  if (result && result.success !== undefined) {
+                    finalResult = result;
+                  }
+                  if (finalResult.success) {
+                    formData.imageUrl = finalResult.fileUrl;
+                    resolve(finalResult.fileUrl);
+                  } else {
+                    reject(new Error(finalResult.message || 'Ralat upload gambar'));
+                  }
+                })
+                .catch(reject);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(playerImageFile);
+          });
+        }
+
+        // Wait for image upload (if any), then update player
+        imageUploadPromise
+          .then(function(imageUrl) {
+            if (imageUrl) {
+              formData.imageUrl = imageUrl;
+            }
+
+            var updatePromise;
         
         if (isNewPlayer) {
           // Add new player
@@ -764,15 +793,22 @@
           }
         }
 
-        if (!updatePromise) {
-          saveBtn.disabled = false;
-          saveBtn.textContent = 'Simpan Perubahan';
-          showMessage('Error: API tidak tersedia.', 'error');
-          return;
-        }
+            if (!updatePromise) {
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'Simpan Perubahan';
+              showMessage('Error: API tidak tersedia.', 'error');
+              return;
+            }
 
-        updatePromise
+            return updatePromise;
+          })
           .then(function(result) {
+          .then(function(result) {
+            // Handle both image upload error and update error
+            if (!result || !result.success) {
+              throw new Error(result ? result.message : 'Unknown error');
+            }
+            
             saveBtn.disabled = false;
             saveBtn.textContent = 'Simpan Perubahan';
 
@@ -809,104 +845,74 @@
           .catch(function(error) {
             saveBtn.disabled = false;
             saveBtn.textContent = 'Simpan Perubahan';
-            showMessage('Ralat: ' + (error.message || error), 'error');
+            var errorMsg = error.message || error;
+            if (typeof error === 'object' && error.success === false) {
+              errorMsg = error.message || errorMsg;
+            }
+            showMessage('Ralat: ' + errorMsg, 'error');
             console.error('Save error:', error);
           });
       });
 
       /**
-       * Load taken jersey numbers
+       * Preview player image
        */
-      function loadTakenNumbers() {
-        var getPromise;
+      document.getElementById('playerImage').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        var previewImg = document.getElementById('imagePreviewImg');
         
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          getPromise = new Promise(function(resolve, reject) {
-            google.script.run
-              .withSuccessHandler(resolve)
-              .withFailureHandler(reject)
-              .getTakenJerseyNumbers();
-          });
-        } else if (typeof API !== 'undefined' && API.getTakenJerseyNumbers) {
-          getPromise = API.getTakenJerseyNumbers();
+        if (file) {
+          // Check file size (5MB limit)
+          if (file.size > 5 * 1024 * 1024) {
+            showMessage('Saiz fail terlalu besar. Maksimum 5MB.', 'error');
+            e.target.value = '';
+            return;
+          }
+          
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewImg.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
         } else {
+          previewImg.style.display = 'none';
+        }
+      });
+
+      /**
+       * Upload IC Document
+       */
+      function uploadICDocument() {
+        var icFile = document.getElementById('icDocument').files[0];
+        if (!icFile) {
+          showMessage('Sila pilih fail IC untuk upload.', 'error');
           return;
         }
 
-        getPromise
-          .then(function(result) {
-            var finalResult = result;
-            if (result && result.success && result.data) {
-              takenNumbers = result.data;
-            } else if (Array.isArray(result)) {
-              takenNumbers = result;
-            }
-            updateTakenNumbersDisplay();
-          })
-          .catch(function(error) {
-            console.error('Error loading taken numbers:', error);
-          });
-      }
-
-      /**
-       * Update taken numbers display
-       */
-      function updateTakenNumbersDisplay() {
-        var infoDiv = document.getElementById('jerseyInfo');
-        var listDiv = document.getElementById('takenNumbersList');
-
-        if (takenNumbers && takenNumbers.length > 0) {
-          infoDiv.style.display = 'block';
-          listDiv.innerHTML = '';
-          takenNumbers.sort(function(a, b) { return a - b; }).forEach(function(num) {
-            var badge = document.createElement('span');
-            badge.className = 'taken-badge';
-            badge.textContent = num;
-            listDiv.appendChild(badge);
-          });
-        } else {
-          infoDiv.style.display = 'none';
-        }
-      }
-
-      /**
-       * Handle jersey form submit
-       */
-      document.getElementById('jerseyForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        var submitBtn = document.getElementById('submitJerseyBtn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Sedang menghantar...';
-
-        var receiptFile = document.getElementById('receiptFile').files[0];
-        if (!receiptFile) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Hantar Tempahan';
-          showMessage('Sila pilih resit bayaran.', 'error');
+        // Check file size (10MB limit)
+        if (icFile.size > 10 * 1024 * 1024) {
+          showMessage('Saiz fail terlalu besar. Maksimum 10MB.', 'error');
           return;
         }
 
-        // Get player data from form
-        var playerName = document.getElementById('name').value.trim();
-        var email = document.getElementById('email').value.trim();
-        var parentName = document.getElementById('parentName').value.trim();
-        var address = document.getElementById('address').value.trim();
-        var icNumber = document.getElementById('icNumber').value.trim();
+        var uploadBtn = document.getElementById('uploadICBtn');
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Sedang upload...';
 
         // Convert file to base64
         var reader = new FileReader();
         reader.onload = function(e) {
           var base64Data = e.target.result.split(',')[1];
           var fileData = {
-            name: receiptFile.name,
-            type: receiptFile.type,
+            name: icFile.name,
+            type: icFile.type,
             data: base64Data
           };
 
-          var jerseyNumber = Number(document.getElementById('jerseyNumber').value);
-
-          // Upload receipt first
+          var playerName = document.getElementById('name').value.trim() || 'Player';
+          
+          // Upload IC document
           var uploadPromise;
           
           if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -914,142 +920,69 @@
               google.script.run
                 .withSuccessHandler(resolve)
                 .withFailureHandler(reject)
-                .uploadReceipt(fileData, playerName, jerseyNumber);
+                .uploadICDocument(fileData, playerName, currentRowIndex);
             });
-          } else if (typeof API !== 'undefined' && API.uploadReceipt) {
-            uploadPromise = API.uploadReceipt(fileData, playerName, jerseyNumber);
+          } else if (typeof API !== 'undefined' && API.uploadICDocument) {
+            uploadPromise = API.uploadICDocument(fileData, playerName, currentRowIndex);
           } else {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Hantar Tempahan';
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Upload IC';
             showMessage('Error: API tidak tersedia.', 'error');
             return;
           }
 
           uploadPromise
-            .then(function(uploadResult) {
-              var result = uploadResult;
-              if (uploadResult && uploadResult.success !== undefined) {
-                result = uploadResult;
-              } else if (uploadResult && uploadResult.fileUrl) {
-                result = { success: true, fileUrl: uploadResult.fileUrl };
+            .then(function(result) {
+              uploadBtn.disabled = false;
+              uploadBtn.textContent = 'Upload IC';
+
+              var finalResult = result;
+              if (result && result.success !== undefined) {
+                finalResult = result;
               }
 
-              if (!result.success) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Hantar Tempahan';
-                showMessage('Ralat upload resit: ' + (result.message || 'Unknown error'), 'error');
-                return;
-              }
-
-              // Submit jersey booking
-              var bookingData = {
-                playerName: playerName,
-                email: email,
-                parentName: parentName,
-                address: address,
-                icNumber: icNumber,
-                jerseySize: document.getElementById('jerseySize').value,
-                jerseyName: document.getElementById('jerseyName').value.trim(),
-                jerseyNumber: jerseyNumber,
-                receiptUrl: result.fileUrl
-              };
-
-              var submitPromise;
-              
-              if (typeof google !== 'undefined' && google.script && google.script.run) {
-                submitPromise = new Promise(function(resolve, reject) {
-                  google.script.run
-                    .withSuccessHandler(resolve)
-                    .withFailureHandler(reject)
-                    .submitJerseyBooking(bookingData);
-                });
-              } else if (typeof API !== 'undefined' && API.submitJerseyBooking) {
-                submitPromise = API.submitJerseyBooking(bookingData);
+              if (finalResult.success) {
+                showMessage('IC berjaya diupload!', 'success');
+                
+                // Update player data
+                if (currentPlayer) {
+                  currentPlayer.icDocumentUrl = finalResult.fileUrl;
+                }
+                
+                // Show preview
+                var icInfo = document.getElementById('currentICInfo');
+                icInfo.innerHTML = '<a href="' + finalResult.fileUrl + '" target="_blank" style="color: #2563eb;">Lihat IC</a>';
+                
+                // Show preview if image
+                if (icFile.type.startsWith('image/')) {
+                  var icPreview = document.getElementById('icPreviewContent');
+                  var img = document.createElement('img');
+                  img.src = finalResult.fileUrl;
+                  img.alt = 'IC Preview';
+                  img.style.cssText = 'max-width: 300px; border-radius: 8px; border: 1px solid #d1d5db;';
+                  icPreview.innerHTML = '';
+                  icPreview.appendChild(img);
+                }
+                
+                document.getElementById('icDocument').value = '';
               } else {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Hantar Tempahan';
-                showMessage('Error: API tidak tersedia.', 'error');
-                return;
+                showMessage(finalResult.message || 'Ralat upload IC', 'error');
               }
-
-              submitPromise
-                .then(function(submitResult) {
-                  submitBtn.disabled = false;
-                  submitBtn.textContent = 'Hantar Tempahan';
-
-                  var finalResult = submitResult;
-                  if (submitResult && submitResult.success !== undefined) {
-                    finalResult = submitResult;
-                  }
-
-                  if (finalResult.success) {
-                    showMessage(finalResult.message || 'Tempahan berjaya disimpan!', 'success');
-                    document.getElementById('jerseyForm').reset();
-                    document.getElementById('receiptPreview').style.display = 'none';
-                    
-                    // Update taken numbers
-                    if (finalResult.takenNumbers) {
-                      takenNumbers = finalResult.takenNumbers;
-                      updateTakenNumbersDisplay();
-                    }
-                  } else {
-                    showMessage(finalResult.message || 'Ralat menyimpan tempahan', 'error');
-                  }
-                })
-                .catch(function(error) {
-                  submitBtn.disabled = false;
-                  submitBtn.textContent = 'Hantar Tempahan';
-                  showMessage('Ralat: ' + (error.message || error), 'error');
-                  console.error('Submit error:', error);
-                });
             })
             .catch(function(error) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Hantar Tempahan';
-              showMessage('Ralat upload resit: ' + (error.message || error), 'error');
-              console.error('Upload error:', error);
+              uploadBtn.disabled = false;
+              uploadBtn.textContent = 'Upload IC';
+              showMessage('Ralat: ' + (error.message || error), 'error');
+              console.error('Upload IC error:', error);
             });
         };
-        reader.readAsDataURL(receiptFile);
-      });
+        reader.readAsDataURL(icFile);
+      }
 
       /**
-       * Preview receipt file
+       * Update player form submit to handle image upload
+       * Image will be uploaded when form is submitted if a new image is selected
        */
-      document.getElementById('receiptFile').addEventListener('change', function(e) {
-        var file = e.target.files[0];
-        var preview = document.getElementById('receiptPreview');
-        var previewImg = document.getElementById('receiptPreviewImg');
-        
-        if (file && file.type.startsWith('image/')) {
-          var reader = new FileReader();
-          reader.onload = function(e) {
-            previewImg.src = e.target.result;
-            preview.style.display = 'block';
-          };
-          reader.readAsDataURL(file);
-        } else {
-          preview.style.display = 'none';
-        }
-      });
-
-      /**
-       * Validate jersey number on input
-       */
-      document.getElementById('jerseyNumber').addEventListener('input', function(e) {
-        var num = Number(e.target.value);
-        var input = e.target;
-
-        if (isNaN(num) || num < 30 || num > 999) {
-          input.classList.add('error');
-        } else {
-          input.classList.remove('error');
-          if (takenNumbers.indexOf(num) !== -1) {
-            input.classList.add('error');
-            showMessage('Nombor ' + num + ' sudah dipesan. Sila pilih nombor lain.', 'error');
-          }
-        }
-      });
 
       /**
        * Update display on input change
