@@ -95,16 +95,37 @@ function handleAPIRequest(e) {
 function doPost(e) {
   try {
     var action = e.parameter.action;
-    var callback = e.parameter.callback; // For JSONP
+    var callback = e.parameter.callback; // For JSONP callback
     var postData = {};
     
-    // Parse POST data
-    if (e.postData && e.postData.contents) {
-      try {
-        postData = JSON.parse(e.postData.contents);
-      } catch (parseError) {
-        Logger.log('doPost: Error parsing POST data - ' + parseError);
-        postData = {};
+    // Parse POST data - handle both JSON and form-encoded data
+    if (e.postData) {
+      if (e.postData.contents) {
+        try {
+          postData = JSON.parse(e.postData.contents);
+        } catch (parseError) {
+          // Try parsing as form data
+          try {
+            var formData = e.postData.contents;
+            if (formData.indexOf('data=') !== -1) {
+              var dataMatch = formData.match(/data=([^&]*)/);
+              if (dataMatch) {
+                postData = JSON.parse(decodeURIComponent(dataMatch[1]));
+              }
+            }
+          } catch (formError) {
+            Logger.log('doPost: Error parsing POST data - ' + formError);
+            postData = {};
+          }
+        }
+      } else if (e.parameter.data) {
+        // Data passed as parameter
+        try {
+          postData = JSON.parse(e.parameter.data);
+        } catch (parseError) {
+          Logger.log('doPost: Error parsing parameter data - ' + parseError);
+          postData = {};
+        }
       }
     }
     
