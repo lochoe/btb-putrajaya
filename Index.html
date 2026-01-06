@@ -269,12 +269,18 @@
   <body>
     <div class="page">
       <nav class="nav-menu">
-        <a href="javascript:void(0)" onclick="navigateTo('players')" class="nav-link active" id="navPlayers">Senarai Pemain</a>
-        <a href="javascript:void(0)" onclick="navigateTo('jersey')" class="nav-link" id="navJersey">Tempahan Baju</a>
+        <a href="javascript:void(0)" onclick="navigateTo('jersey')" class="nav-link active" id="navJersey">Tempahan Baju</a>
+        <a href="javascript:void(0)" onclick="navigateTo('players')" class="nav-link" id="navPlayers">Senarai Pemain</a>
       </nav>
 
-      <!-- Players Section -->
-      <div id="playersSection">
+      <!-- Jersey Booking Section (default, shown first) -->
+      <div id="jerseySection">
+        <div id="jerseyContent">Loading form...</div>
+      </div>
+      <!-- End Jersey Booking Section -->
+
+      <!-- Players Section (hidden by default) -->
+      <div id="playersSection" style="display: none;">
       <section class="header">
         <h1 class="title">Senarai Pemain BTB Putrajaya 2025</h1>
         <p class="subtitle">Data diambil terus dari Google Form pendaftaran & Google Sheets.</p>
@@ -318,18 +324,19 @@
       <section id="playerCards" class="cards-grid"></section>
       </div>
       <!-- End Players Section -->
-
-      <!-- Jersey Booking Section (hidden by default) -->
-      <div id="jerseySection" style="display: none;">
-        <div id="jerseyContent">Loading form...</div>
-      </div>
-      <!-- End Jersey Booking Section -->
     </div>
 
     <script>
-      // Store all data globally for filtering (preloaded from server via template)
-      // `initialData` is injected by doGet() using HtmlService.createTemplateFromFile
-      let allData = <?!= JSON.stringify(initialData || []); ?>;
+      // Store all data globally for filtering
+      // Load from Apps Script API if running on Vercel, or use preloaded data if in Apps Script
+      let allData = [];
+      
+      // Check if running in Apps Script (has google.script) or Vercel (needs API call)
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        // Running in Apps Script - data should be preloaded via template
+        // Note: Template syntax won't work here, so we'll load via API
+        allData = [];
+      }
 
       /**
        * populateFilters
@@ -516,6 +523,26 @@
         renderCards(filteredData);
       }
 
+      // Helper function to load jersey form from file
+      function loadJerseyFormFromFile() {
+        var jerseyContent = document.getElementById('jerseyContent');
+        fetch('/JerseyBooking.html')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Failed to load JerseyBooking.html');
+            }
+            return response.text();
+          })
+          .then(html => {
+            jerseyContent.innerHTML = html;
+            initializeJerseyForm();
+          })
+          .catch(error => {
+            jerseyContent.innerHTML = '<p style="color: red;">Error loading form. Please ensure JerseyBooking.html is available.</p>';
+            console.error('Error loading jersey form:', error);
+          });
+      }
+
       // Navigation function - client-side routing (show/hide sections)
       function navigateTo(page) {
         var playersSection = document.getElementById('playersSection');
@@ -532,16 +559,21 @@
           // Load jersey form content if not loaded yet
           var jerseyContent = document.getElementById('jerseyContent');
           if (jerseyContent && jerseyContent.innerHTML === 'Loading form...') {
-            google.script.run
-              .withSuccessHandler(function(html) {
-                jerseyContent.innerHTML = html;
-                // Re-initialize jersey form scripts
-                initializeJerseyForm();
-              })
-              .withFailureHandler(function(error) {
-                jerseyContent.innerHTML = '<p style="color: red;">Error loading form: ' + error + '</p>';
-              })
-              .getJerseyBookingContent();
+            // Try Apps Script API first, fallback to direct load
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+              google.script.run
+                .withSuccessHandler(function(html) {
+                  jerseyContent.innerHTML = html;
+                  initializeJerseyForm();
+                })
+                .withFailureHandler(function(error) {
+                  loadJerseyFormFromFile();
+                })
+                .getJerseyBookingContent();
+            } else {
+              // Running on Vercel - load JerseyBooking.html directly
+              loadJerseyFormFromFile();
+            }
           }
         } else {
           if (playersSection) playersSection.style.display = 'block';
@@ -560,28 +592,66 @@
       // Update nav link active state based on current page
       (function updateNav() {
         var urlParams = new URLSearchParams(window.location.search);
-        var page = urlParams.get('page') || 'players';
+        var page = urlParams.get('page') || 'jersey'; // Default to jersey
         var navPlayers = document.getElementById('navPlayers');
         var navJersey = document.getElementById('navJersey');
 
         if (page === 'jersey') {
           if (navJersey) navJersey.classList.add('active');
           if (navPlayers) navPlayers.classList.remove('active');
+          navigateTo('jersey');
         } else {
           if (navPlayers) navPlayers.classList.add('active');
           if (navJersey) navJersey.classList.remove('active');
+          navigateTo('players');
         }
       })();
 
-      // Initialise UI on page load using preloaded data
+      // Load player data on page load (if needed)
       (function init() {
-        console.log('init: initialData length =', allData ? allData.length : 'null/undefined');
-        if (allData && allData.length > 0) {
+        // Load player data if running on Vercel or if data not preloaded
+        if (allData.length === 0) {
+          // Try to load from API
+          if (typeof API !== 'undefined' && API.getData) {
+            API.getData()
+              .then(function(result) {
+                if (result && result.success && result.data) {
+                  allData = result.data;
+                } else if (result && Array.isArray(result)) {
+                  allData = result; // Direct array response
+                }
+                if (allData.length > 0) {
+                  populateFilters(allData);
+                  renderCards(allData);
+                }
+              })
+              .catch(function(error) {
+                console.error('Error loading player data:', error);
+                // If players section is visible, show error
+                var playerCards = document.getElementById('playerCards');
+                if (playerCards) {
+                  playerCards.innerHTML = '<div class="empty-state">Tiada data pemain buat masa ini.</div>';
+                }
+              });
+          } else if (typeof google !== 'undefined' && google.script && google.script.run) {
+            // Running in Apps Script - try to get data
+            google.script.run
+              .withSuccessHandler(function(data) {
+                allData = data || [];
+                if (allData.length > 0) {
+                  populateFilters(allData);
+                  renderCards(allData);
+                }
+              })
+              .withFailureHandler(function(error) {
+                console.error('Error loading player data:', error);
+              })
+              .getData();
+          }
+        } else {
+          // Data already loaded
           populateFilters(allData);
           renderCards(allData);
-        } else {
-          document.getElementById('playerCards').innerHTML =
-            '<div class="empty-state">Tiada data pemain buat masa ini.</div>';
         }
       })();
     </script>
