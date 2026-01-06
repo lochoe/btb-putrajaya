@@ -1,0 +1,7 @@
+# Files to ignore when pushing to Apps Script
+.git/
+.gitignore
+SYNC_TO_APPS_SCRIPT.md
+*.md
+# Note: testOpenForm.js dan populateCheckboxes.js adalah utility functions,
+# bukan untuk web app, tapi boleh keep untuk function lain

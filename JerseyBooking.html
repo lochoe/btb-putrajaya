@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ms">
+  <head>
+    <!--
+      File: JerseyBooking.html
+      Purpose: Form untuk tempahan baju (jersey booking) dengan validasi nombor jersi unik (30-999).
+      Uses: submitJerseyBooking(), getTakenJerseyNumbers() dari Apps Script backend.
+    -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tempahan Baju BTB Putrajaya</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        margin: 0;
+        padding: 16px;
+        background-color: #f3f4f6;
+        color: #111827;
+      }
+
+      .page {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .header {
+        margin-bottom: 24px;
+        text-align: center;
+      }
+
+      .title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        color: #111827;
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin: 4px 0 0;
+      }
+
+      .form-container {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+      }
+
+      .form-label .required {
+        color: #dc2626;
+      }
+
+      .form-input,
+      .form-select {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 0.875rem;
+        outline: none;
+        background-color: #f9fafb;
+        box-sizing: border-box;
+      }
+
+      input[type="file"] {
+        padding: 6px;
+        cursor: pointer;
+      }
+
+      input[type="file"]::-webkit-file-upload-button {
+        padding: 6px 12px;
+        margin-right: 8px;
+        border: none;
+        border-radius: 6px;
+        background-color: #2563eb;
+        color: #ffffff;
+        font-size: 0.875rem;
+        cursor: pointer;
+      }
+
+      input[type="file"]::-webkit-file-upload-button:hover {
+        background-color: #1d4ed8;
+      }
+
+      .form-input:focus,
+      .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+        background-color: #ffffff;
+      }
+
+      .form-input.error {
+        border-color: #dc2626;
+      }
+
+      .form-help {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 4px;
+      }
+
+      .jersey-number-info {
+        background-color: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        font-size: 0.875rem;
+      }
+
+      .jersey-number-info strong {
+        color: #1e40af;
+      }
+
+      .taken-numbers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 8px;
+      }
+
+      .taken-badge {
+        background-color: #fee2e2;
+        color: #991b1b;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      .bank-info {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        font-size: 0.875rem;
+        line-height: 1.6;
+      }
+
+      .bank-info h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #166534;
+        margin: 0 0 8px;
+      }
+
+      .bank-info p {
+        margin: 4px 0;
+        color: #15803d;
+      }
+
+      .submit-btn {
+        width: 100%;
+        padding: 12px;
+        background-color: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .submit-btn:hover {
+        background-color: #1d4ed8;
+      }
+
+      .submit-btn:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .message {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 0.875rem;
+      }
+
+      .message.success {
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+      }
+
+      .message.error {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      .nav-menu {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding: 12px;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+
+      .nav-link {
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #4b5563;
+        background-color: #f9fafb;
+        transition: all 0.2s;
+      }
+
+      .nav-link:hover {
+        background-color: #e5e7eb;
+        color: #111827;
+      }
+
+      .nav-link.active {
+        background-color: #2563eb;
+        color: #ffffff;
+      }
+
+      @media (max-width: 640px) {
+        .form-container {
+          padding: 16px;
+        }
+
+        .nav-menu {
+          flex-direction: column;
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <nav class="nav-menu">
+        <a href="javascript:void(0)" onclick="navigateTo('jersey')" class="nav-link active" id="navJersey">Tempahan Baju</a>
+        <a href="javascript:void(0)" onclick="navigateTo('players')" class="nav-link" id="navPlayers">Senarai Pemain</a>
+      </nav>
+
+      <!-- Jersey Booking Section (main page, shown by default) -->
+      <div id="jerseySection">
+
+      <section class="header">
+        <h1 class="title">Tempahan Baju BTB Putrajaya</h1>
+        <p class="subtitle">Sila isi maklumat di bawah untuk tempahan baju.</p>
+      </section>
+
+      <div id="messageContainer"></div>
+
+      <div class="bank-info">
+        <h3>Maklumat Bank untuk Bayaran</h3>
+        <p><strong>Bank:</strong> AFFIN BANK</p>
+        <p><strong>No. Akaun:</strong> 1004 9002 1285</p>
+        <p><strong>Nama Akaun:</strong> STICK AND BALL HOCKEY CLUB</p>
+        <p><strong>Remark:</strong> Nama Anak</p>
+      </div>
+
+      <div class="form-container">
+        <form id="jerseyForm">
+          <div class="form-group">
+            <label class="form-label">
+              Nama Penuh Pemain <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="playerName"
+              class="form-input"
+              required
+              placeholder="Contoh: Shaqeel Ramadhan Bin Mohd Shahrul"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Email <span class="required">*</span>
+            </label>
+            <input
+              type="email"
+              id="email"
+              class="form-input"
+              required
+              placeholder="contoh@email.com"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Nama Ibu Bapa Penjaga <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="parentName"
+              class="form-input"
+              required
+              placeholder="Contoh: Mohd Shahrul Bin Zakaria"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Alamat <span class="required">*</span>
+            </label>
+            <textarea
+              id="address"
+              class="form-input"
+              rows="3"
+              required
+              placeholder="Alamat penuh"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              No. IC Pemain <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="icNumber"
+              class="form-input"
+              required
+              placeholder="Contoh: 123456-78-9012"
+            />
+            <div class="form-help">No. IC untuk pemain (bukan parent)</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Saiz Baju <span class="required">*</span>
+            </label>
+            <select id="jerseySize" class="form-select" required>
+              <option value="">-- Pilih Saiz --</option>
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Nama di Jersi <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="jerseyName"
+              class="form-input"
+              required
+              placeholder="Contoh: SHAQEEL"
+              maxlength="20"
+            />
+            <div class="form-help">Maksimum 20 aksara (akan dipaparkan di belakang baju)</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Nombor Jersi <span class="required">*</span>
+            </label>
+            <input
+              type="number"
+              id="jerseyNumber"
+              class="form-input"
+              required
+              min="30"
+              max="999"
+              placeholder="30-999"
+            />
+            <div class="form-help">Nombor antara 30 hingga 999 (mesti unik, tidak boleh sama dengan pemain lain)</div>
+            <div class="jersey-number-info" id="jerseyInfo" style="display: none;">
+              <strong>Nombor yang sudah dipesan:</strong>
+              <div class="taken-numbers" id="takenNumbersList"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Resit Bayaran <span class="required">*</span>
+            </label>
+            <input
+              type="file"
+              id="receiptFile"
+              class="form-input"
+              accept="image/*,.pdf"
+              required
+            />
+            <div class="form-help">Upload resit bayaran (Gambar atau PDF). Resit akan disimpan ke Google Drive.</div>
+            <div id="receiptPreview" style="margin-top: 8px; display: none;">
+              <img id="receiptPreviewImg" src="" alt="Receipt preview" style="max-width: 200px; border-radius: 8px; border: 1px solid #d1d5db;" />
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submitBtn">
+            Hantar Tempahan
+          </button>
+        </form>
+      </div>
+      </div>
+      <!-- End Jersey Booking Section -->
+
+      <!-- Players Section (hidden by default, loaded dynamically) -->
+      <div id="playersSection" style="display: none;">
+        <div id="playersContent">Loading senarai pemain...</div>
+      </div>
+      <!-- End Players Section -->
+    </div>
+
+    <script>
+      // Preload taken numbers dari server (injected via template)
+      var takenNumbers = <?!= JSON.stringify(takenNumbers || []); ?>;
+
+      // Display taken numbers on page load
+      function updateTakenNumbersDisplay() {
+        var infoDiv = document.getElementById('jerseyInfo');
+        var listDiv = document.getElementById('takenNumbersList');
+
+        if (takenNumbers && takenNumbers.length > 0) {
+          infoDiv.style.display = 'block';
+          listDiv.innerHTML = '';
+          takenNumbers
+            .sort(function (a, b) {
+              return a - b;
+            })
+            .forEach(function (num) {
+              var badge = document.createElement('span');
+              badge.className = 'taken-badge';
+              badge.textContent = num;
+              listDiv.appendChild(badge);
+            });
+        } else {
+          infoDiv.style.display = 'none';
+        }
+      }
+
+      // Validate jersey number on input
+      document.getElementById('jerseyNumber').addEventListener('input', function (e) {
+        var num = Number(e.target.value);
+        var input = e.target;
+
+        if (isNaN(num) || num < 30 || num > 999) {
+          input.classList.add('error');
+        } else {
+          input.classList.remove('error');
+
+          // Check if number is taken
+          if (takenNumbers.indexOf(num) !== -1) {
+            input.classList.add('error');
+            showMessage('Nombor ' + num + ' sudah dipesan. Sila pilih nombor lain.', 'error');
+          }
+        }
+      });
+
+      // Preview receipt file
+      document.getElementById('receiptFile').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        var preview = document.getElementById('receiptPreview');
+        var previewImg = document.getElementById('receiptPreviewImg');
+        
+        if (file && file.type.startsWith('image/')) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        } else {
+          preview.style.display = 'none';
+        }
+      });
+
+      // Handle form submit
+      document.getElementById('jerseyForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sedang menghantar...';
+
+        var receiptFile = document.getElementById('receiptFile').files[0];
+        if (!receiptFile) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Hantar Tempahan';
+          showMessage('Sila pilih resit bayaran.', 'error');
+          return;
+        }
+
+        // Convert file to base64 for Apps Script
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var base64Data = e.target.result.split(',')[1]; // Remove data:image/...;base64, prefix
+          var fileData = {
+            name: receiptFile.name,
+            type: receiptFile.type,
+            data: base64Data
+          };
+
+          // Upload file first
+          google.script.run
+            .withSuccessHandler(function(uploadResult) {
+              if (!uploadResult.success) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Hantar Tempahan';
+                showMessage('Ralat upload resit: ' + uploadResult.message, 'error');
+                return;
+              }
+
+              // File uploaded successfully, now submit form data
+              var bookingData = {
+                playerName: document.getElementById('playerName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                parentName: document.getElementById('parentName').value.trim(),
+                address: document.getElementById('address').value.trim(),
+                icNumber: document.getElementById('icNumber').value.trim(),
+                jerseySize: document.getElementById('jerseySize').value,
+                jerseyName: document.getElementById('jerseyName').value.trim(),
+                jerseyNumber: Number(document.getElementById('jerseyNumber').value),
+                receiptUrl: uploadResult.fileUrl
+              };
+
+              google.script.run
+                .withSuccessHandler(function (result) {
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = 'Hantar Tempahan';
+
+                  if (result.success) {
+                    showMessage(result.message, 'success');
+                    // Update taken numbers list
+                    if (result.takenNumbers) {
+                      takenNumbers = result.takenNumbers;
+                      updateTakenNumbersDisplay();
+                    }
+                    // Reset form
+                    document.getElementById('jerseyForm').reset();
+                    document.getElementById('receiptPreview').style.display = 'none';
+                  } else {
+                    showMessage(result.message, 'error');
+                    // Update taken numbers if provided
+                    if (result.takenNumbers) {
+                      takenNumbers = result.takenNumbers;
+                      updateTakenNumbersDisplay();
+                    }
+                  }
+                })
+                .withFailureHandler(function (error) {
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = 'Hantar Tempahan';
+                  showMessage('Ralat: ' + error, 'error');
+                })
+                .submitJerseyBooking(bookingData);
+            })
+            .withFailureHandler(function (error) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Hantar Tempahan';
+              showMessage('Ralat upload resit: ' + error, 'error');
+            })
+            .uploadReceipt(fileData, document.getElementById('playerName').value.trim(), document.getElementById('jerseyNumber').value);
+        };
+        reader.readAsDataURL(receiptFile);
+      });
+
+      function showMessage(text, type) {
+        var container = document.getElementById('messageContainer');
+        container.innerHTML = '<div class="message ' + type + '">' + text + '</div>';
+        // Auto-hide after 5 seconds
+        setTimeout(function () {
+          container.innerHTML = '';
+        }, 5000);
+      }
+
+      // Navigation function - client-side routing (show/hide sections)
+      function navigateTo(page) {
+        var playersSection = document.getElementById('playersSection');
+        var jerseySection = document.getElementById('jerseySection');
+        var navPlayers = document.getElementById('navPlayers');
+        var navJersey = document.getElementById('navJersey');
+
+        if (page === 'players') {
+          // Show players section, hide jersey section
+          if (playersSection) playersSection.style.display = 'block';
+          if (jerseySection) jerseySection.style.display = 'none';
+          if (navPlayers) navPlayers.classList.add('active');
+          if (navJersey) navJersey.classList.remove('active');
+          
+          // Load players content if not loaded yet
+          var playersContent = document.getElementById('playersContent');
+          if (playersContent && playersContent.innerHTML === 'Loading senarai pemain...') {
+            google.script.run
+              .withSuccessHandler(function(html) {
+                playersContent.innerHTML = html;
+                // Re-initialize players scripts
+                initializePlayersList();
+              })
+              .withFailureHandler(function(error) {
+                playersContent.innerHTML = '<p style="color: red;">Error loading senarai pemain: ' + error + '</p>';
+              })
+              .getPlayersListContent();
+          }
+        } else {
+          // Show jersey section, hide players section (default)
+          if (playersSection) playersSection.style.display = 'none';
+          if (jerseySection) jerseySection.style.display = 'block';
+          if (navJersey) navJersey.classList.add('active');
+          if (navPlayers) navPlayers.classList.remove('active');
+        }
+      }
+
+      // Initialize players list (called after content loaded)
+      function initializePlayersList() {
+        // This will be called after Index.html content is loaded
+        // The scripts in Index.html will run automatically
+      }
+
+      // Initialize on page load
+      updateTakenNumbersDisplay();
+    </script>
+  </body>
+</html>

@@ -1,14 +1,30 @@
-# Ignore local Apps Script / misc files – GitHub Pages only needs index.html
-Index.html
-doGet.js
+# Ignore sensitive config file (contains real IDs)
 config.js
+
+# Ignore utility/test files
 code.js
 populateCheckboxes.js
 testOpenForm.js
+
+# Ignore Apps Script compiled files
 *.gs
+
+# Ignore TypeScript compiled files
 *.ts
-*.js
-!.eslintrc.js
-!.prettierrc.js
+
+# Ignore node modules (if any)
+node_modules/
+
+# Ignore clasp auth
+.clasprc.json
+
+# Keep these files for GitHub:
+# - Index.html (main page)
+# - JerseyBooking.html (jersey booking form)
+# - jerseyBooking.js (backend logic)
+# - doGet.js (web app entry point)
+# - appsscript.json (Apps Script manifest)
+# - .clasp.json (clasp config - scriptId is not sensitive)
+# - config.example.js (template)
 
 

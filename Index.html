@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!--
+      File: Index.html
+      Purpose: Frontend UI to display and filter BTB Putrajaya players from Google Sheets.
+      Uses: google.script.run.getData() to load player data from Apps Script backend.
+    -->
+    <title>BTB Putrajaya - Senarai Pemain</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        margin: 0;
+        padding: 16px;
+        background-color: #f3f4f6;
+        color: #111827;
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .header {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 16px;
+      }
+
+      .title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin: 0;
+      }
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 16px;
+        background-color: #ffffff;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 140px;
+        flex: 1 1 140px;
+      }
+
+      .filter-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+      }
+
+      .filter-select,
+      .filter-input {
+        padding: 6px 8px;
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+        font-size: 0.875rem;
+        outline: none;
+        background-color: #f9fafb;
+      }
+
+      .filter-select:focus,
+      .filter-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+        background-color: #ffffff;
+      }
+
+      .filter-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: #4b5563;
+        margin-top: 20px;
+      }
+
+      .stats {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-bottom: 8px;
+      }
+
+      .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+
+      .player-card {
+        background-color: #ffffff;
+        border-radius: 0.75rem;
+        padding: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+
+      .player-avatar {
+        width: 76px;
+        height: 76px;
+        border-radius: 9999px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background-color: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #4b5563;
+        font-size: 1.2rem;
+      }
+
+      .player-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .player-main {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .player-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #111827;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .player-sub {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .player-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 4px;
+      }
+
+      .badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 9999px;
+        background-color: #e5e7eb;
+        color: #374151;
+        font-weight: 500;
+      }
+
+      .badge-skill-BEGINNER {
+        background-color: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .badge-skill-BASIC {
+        background-color: #e0f2fe;
+        color: #0369a1;
+      }
+
+      .badge-skill-INTERMEDIATE {
+        background-color: #dcfce7;
+        color: #166534;
+      }
+
+      .badge-skill-ADVANCED {
+        background-color: #fef3c7;
+        color: #92400e;
+      }
+
+      .badge-age {
+        background-color: #e5e7eb;
+        color: #374151;
+      }
+
+      .empty-state {
+        font-size: 0.9rem;
+        color: #6b7280;
+        padding: 24px;
+        text-align: center;
+        background-color: #ffffff;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+
+      .nav-menu {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding: 12px;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+
+      .nav-link {
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #4b5563;
+        background-color: #f9fafb;
+        transition: all 0.2s;
+      }
+
+      .nav-link:hover {
+        background-color: #e5e7eb;
+        color: #111827;
+      }
+
+      .nav-link.active {
+        background-color: #2563eb;
+        color: #ffffff;
+      }
+
+      @media (max-width: 640px) {
+        .header {
+          margin-bottom: 12px;
+        }
+
+        .filters {
+          padding: 10px;
+        }
+
+        .player-card {
+          padding: 10px;
+        }
+
+        .nav-menu {
+          flex-direction: column;
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <nav class="nav-menu">
+        <a href="javascript:void(0)" onclick="navigateTo('players')" class="nav-link active" id="navPlayers">Senarai Pemain</a>
+        <a href="javascript:void(0)" onclick="navigateTo('jersey')" class="nav-link" id="navJersey">Tempahan Baju</a>
+      </nav>
+
+      <!-- Players Section -->
+      <div id="playersSection">
+      <section class="header">
+        <h1 class="title">Senarai Pemain BTB Putrajaya 2025</h1>
+        <p class="subtitle">Data diambil terus dari Google Form pendaftaran & Google Sheets.</p>
+      </section>
+
+      <section class="filters" id="filters">
+        <div class="filter-group">
+          <span class="filter-label">Tahap Penguasaan</span>
+          <select id="skillLevel" class="filter-select" onchange="filterCards()">
+            <option value="">Semua</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">Umur</span>
+          <select id="ageFilter" class="filter-select" onchange="filterCards()">
+            <option value="">Semua</option>
+      </select>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">Cari Nama / Ibu Bapa</span>
+          <input
+            id="searchText"
+            class="filter-input"
+            type="text"
+            placeholder="Contoh: Shaqeel / Shahrul"
+            oninput="filterCards()"
+          />
+        </div>
+
+        <div class="filter-group" style="min-width: 180px; flex: 0 0 auto;">
+          <label class="filter-checkbox">
+            <input type="checkbox" id="hasPhoto" onchange="filterCards()" />
+            Hanya pemain yang ada gambar
+          </label>
+        </div>
+      </section>
+
+      <div class="stats" id="statsText"></div>
+      <section id="playerCards" class="cards-grid"></section>
+      </div>
+      <!-- End Players Section -->
+
+      <!-- Jersey Booking Section (hidden by default) -->
+      <div id="jerseySection" style="display: none;">
+        <div id="jerseyContent">Loading form...</div>
+      </div>
+      <!-- End Jersey Booking Section -->
+    </div>
+
+    <script>
+      // Store all data globally for filtering (preloaded from server via template)
+      // `initialData` is injected by doGet() using HtmlService.createTemplateFromFile
+      let allData = <?!= JSON.stringify(initialData || []); ?>;
+
+      /**
+       * populateFilters
+       * What: Build dropdown options (Skill Level & Umur) berdasarkan data sebenar.
+       * Input: data: Player[]
+       * Output: none (update <select> options)
+       * Side effects: modifies DOM selects.
+       */
+      function populateFilters(data) {
+        var skillSelect = document.getElementById('skillLevel');
+        var ageSelect = document.getElementById('ageFilter');
+
+        var skillSet = {};
+        var ageSet = {};
+
+        data.forEach(function (player) {
+          if (player.skillLevel) {
+            skillSet[player.skillLevel] = true;
+          }
+          if (player.age) {
+            ageSet[player.age] = true;
+          }
+        });
+
+        // Populate skill levels
+        Object.keys(skillSet)
+          .sort()
+          .forEach(function (level) {
+            var option = document.createElement('option');
+            option.value = level;
+            option.textContent = level;
+            skillSelect.appendChild(option);
+          });
+
+        // Populate ages
+        Object.keys(ageSet)
+          .sort(function (a, b) {
+            return Number(a) - Number(b);
+          })
+          .forEach(function (age) {
+            var option = document.createElement('option');
+            option.value = age;
+            option.textContent = age + ' tahun';
+            ageSelect.appendChild(option);
+          });
+      }
+
+      /**
+       * renderCards
+       * What: Render senarai kad pemain dalam grid.
+       * Input: data: Player[]
+       * Output: none (updates DOM)
+       * Side effects: manipulates #playerCards & #statsText.
+       */
+      function renderCards(data) {
+        var container = document.getElementById('playerCards');
+        var statsText = document.getElementById('statsText');
+
+        container.innerHTML = '';
+
+        if (!data || data.length === 0) {
+          statsText.textContent = '0 pemain dijumpai untuk filter semasa.';
+          container.innerHTML =
+            '<div class="empty-state">Tiada pemain sepadan dengan filter yang dipilih.</div>';
+          return;
+        }
+
+        statsText.textContent = data.length + ' pemain dipaparkan.';
+
+        data.forEach(function (player) {
+          var card = document.createElement('div');
+          card.className = 'player-card';
+
+          var avatar = document.createElement('div');
+          avatar.className = 'player-avatar';
+
+          if (player.imageUrl) {
+            var img = document.createElement('img');
+            img.src = player.imageUrl;
+            img.alt = player.name || 'Pemain';
+            avatar.appendChild(img);
+          } else {
+            var initials = (player.name || '')
+              .split(' ')
+              .filter(function (part) {
+                return part && part.length > 0;
+              })
+              .slice(0, 2)
+              .map(function (part) {
+                return part.charAt(0).toUpperCase();
+              })
+              .join('');
+            avatar.textContent = initials || '?';
+          }
+
+          var main = document.createElement('div');
+          main.className = 'player-main';
+
+          var nameEl = document.createElement('h3');
+          nameEl.className = 'player-name';
+          nameEl.textContent = player.name || '-';
+
+          var subEl = document.createElement('p');
+          subEl.className = 'player-sub';
+          var school = player.school || '-';
+          var parent = player.parentName || '-';
+          subEl.textContent = school + ' • ' + parent;
+
+          var meta = document.createElement('div');
+          meta.className = 'player-meta';
+
+          var ageBadge = document.createElement('span');
+          ageBadge.className = 'badge badge-age';
+          ageBadge.textContent = (player.age || '-') + ' tahun';
+          meta.appendChild(ageBadge);
+
+          if (player.skillLevel) {
+            var skillBadge = document.createElement('span');
+            var skillClass = 'badge-skill-' + String(player.skillLevel).toUpperCase();
+            skillBadge.className = 'badge ' + skillClass;
+            skillBadge.textContent = player.skillLevel;
+            meta.appendChild(skillBadge);
+          }
+
+          if (player.achievement) {
+            var achievementBadge = document.createElement('span');
+            achievementBadge.className = 'badge';
+            achievementBadge.textContent = player.achievement;
+            meta.appendChild(achievementBadge);
+          }
+
+          main.appendChild(nameEl);
+          main.appendChild(subEl);
+          main.appendChild(meta);
+
+          card.appendChild(avatar);
+          card.appendChild(main);
+
+          container.appendChild(card);
+        });
+      }
+
+      /**
+       * filterCards
+       * What: Apply all basic filters (skill level, age, search, hasPhoto) on allData.
+       * Input: none (reads DOM + allData)
+       * Output: none (calls renderCards with filtered result)
+       * Side effects: none beyond DOM updates.
+       */
+      function filterCards() {
+        var skillLevel = document.getElementById('skillLevel').value;
+        var ageFilter = document.getElementById('ageFilter').value;
+        var searchText = document.getElementById('searchText').value.toLowerCase();
+        var hasPhoto = document.getElementById('hasPhoto').checked;
+
+        var filteredData = allData.filter(function (player) {
+          // Skill level filter
+          if (skillLevel && player.skillLevel !== skillLevel) {
+            return false;
+          }
+
+          // Age filter
+          if (ageFilter && String(player.age) !== ageFilter) {
+            return false;
+          }
+
+          // Has photo filter
+          if (hasPhoto && !player.imageUrl) {
+            return false;
+          }
+
+          // Search filter (nama pelatih / nama ibu bapa)
+          if (searchText) {
+            var name = (player.name || '').toLowerCase();
+            var parent = (player.parentName || '').toLowerCase();
+            if (name.indexOf(searchText) === -1 && parent.indexOf(searchText) === -1) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        renderCards(filteredData);
+      }
+
+      // Navigation function - client-side routing (show/hide sections)
+      function navigateTo(page) {
+        var playersSection = document.getElementById('playersSection');
+        var jerseySection = document.getElementById('jerseySection');
+        var navPlayers = document.getElementById('navPlayers');
+        var navJersey = document.getElementById('navJersey');
+
+        if (page === 'jersey') {
+          if (playersSection) playersSection.style.display = 'none';
+          if (jerseySection) jerseySection.style.display = 'block';
+          if (navJersey) navJersey.classList.add('active');
+          if (navPlayers) navPlayers.classList.remove('active');
+          
+          // Load jersey form content if not loaded yet
+          var jerseyContent = document.getElementById('jerseyContent');
+          if (jerseyContent && jerseyContent.innerHTML === 'Loading form...') {
+            google.script.run
+              .withSuccessHandler(function(html) {
+                jerseyContent.innerHTML = html;
+                // Re-initialize jersey form scripts
+                initializeJerseyForm();
+              })
+              .withFailureHandler(function(error) {
+                jerseyContent.innerHTML = '<p style="color: red;">Error loading form: ' + error + '</p>';
+              })
+              .getJerseyBookingContent();
+          }
+        } else {
+          if (playersSection) playersSection.style.display = 'block';
+          if (jerseySection) jerseySection.style.display = 'none';
+          if (navPlayers) navPlayers.classList.add('active');
+          if (navJersey) navJersey.classList.remove('active');
+        }
+      }
+
+      // Initialize jersey form (called after content loaded)
+      function initializeJerseyForm() {
+        // This will be called after JerseyBooking.html content is loaded
+        // The scripts in JerseyBooking.html will run automatically
+      }
+
+      // Update nav link active state based on current page
+      (function updateNav() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var page = urlParams.get('page') || 'players';
+        var navPlayers = document.getElementById('navPlayers');
+        var navJersey = document.getElementById('navJersey');
+
+        if (page === 'jersey') {
+          if (navJersey) navJersey.classList.add('active');
+          if (navPlayers) navPlayers.classList.remove('active');
+        } else {
+          if (navPlayers) navPlayers.classList.add('active');
+          if (navJersey) navJersey.classList.remove('active');
+        }
+      })();
+
+      // Initialise UI on page load using preloaded data
+      (function init() {
+        console.log('init: initialData length =', allData ? allData.length : 'null/undefined');
+        if (allData && allData.length > 0) {
+          populateFilters(allData);
+          renderCards(allData);
+        } else {
+          document.getElementById('playerCards').innerHTML =
+            '<div class="empty-state">Tiada data pemain buat masa ini.</div>';
+        }
+      })();
+    </script>
+  </body>
+</html>
