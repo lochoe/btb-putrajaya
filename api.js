@@ -32,14 +32,14 @@ function callAppsScriptAPIGET(action) {
     script.src = url;
     console.log('API callAppsScriptAPIGET - URL:', url);
     
-    // Timeout after 15 seconds
+    // Timeout after 60 seconds (for large uploads)
     const timeout = setTimeout(() => {
       if (document.body.contains(script)) {
         document.body.removeChild(script);
       }
       delete window[callbackName];
       reject(new Error('API request timeout. Sila pastikan Apps Script URL betul dan boleh diakses.'));
-    }, 15000);
+    }, 60000);
     
     script.onerror = () => {
       clearTimeout(timeout);
@@ -114,14 +114,14 @@ function callAppsScriptAPIPOST(action, data = {}) {
       }
     }, 100);
     
-    // Timeout after 30 seconds
+    // Timeout after 90 seconds (for large file uploads)
     setTimeout(() => {
       if (document.body.contains(iframe)) {
         document.body.removeChild(iframe);
         delete window[callbackName];
-        reject(new Error('Request timeout'));
+        reject(new Error('Request timeout - Upload mengambil masa terlalu lama. Cuba fail yang lebih kecil atau check internet connection.'));
       }
-    }, 30000);
+    }, 90000);
   });
 }
 
@@ -226,14 +226,14 @@ const API = {
       script.src = url;
       console.log('API searchByEmail - URL:', url);
       
-      // Timeout after 15 seconds
+      // Timeout after 30 seconds (for GET requests)
       const timeout = setTimeout(() => {
         if (document.body.contains(script)) {
           document.body.removeChild(script);
         }
         delete window[callbackName];
         reject(new Error('API request timeout. Sila pastikan Apps Script URL betul dan boleh diakses.'));
-      }, 15000);
+      }, 30000);
       
       script.onerror = () => {
         clearTimeout(timeout);
@@ -282,14 +282,14 @@ const API = {
       script.src = url;
       console.log('API getPlayerById - URL:', url);
       
-      // Timeout after 15 seconds
+      // Timeout after 30 seconds (for GET requests)
       const timeout = setTimeout(() => {
         if (document.body.contains(script)) {
           document.body.removeChild(script);
         }
         delete window[callbackName];
         reject(new Error('API request timeout. Sila pastikan Apps Script URL betul dan boleh diakses.'));
-      }, 15000);
+      }, 30000);
       
       script.onerror = () => {
         clearTimeout(timeout);

@@ -256,9 +256,19 @@ function doPost(e) {
     }
     
     // Return JSONP if callback specified, otherwise JSON
+    // For POST requests, always return HTML page with script tag for JSONP callback
     if (callback) {
-      return ContentService.createTextOutput(callback + '(' + JSON.stringify(result) + ');')
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      // Create HTML page with script that calls the callback
+      var htmlOutput = '<!DOCTYPE html><html><head><title>Loading...</title></head><body><script type="text/javascript">' +
+        'if (window.parent && window.parent.' + callback + ') {' +
+        '  window.parent.' + callback + '(' + JSON.stringify(result) + ');' +
+        '} else if (window.' + callback + ') {' +
+        '  window.' + callback + '(' + JSON.stringify(result) + ');' +
+        '}' +
+        '</script></body></html>';
+      
+      Logger.log('doPost: returning JSONP HTML for callback ' + callback);
+      return HtmlService.createHtmlOutput(htmlOutput);
     } else {
       return ContentService.createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
