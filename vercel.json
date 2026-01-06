@@ -4,6 +4,10 @@
     {
       "src": "*.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "*.js",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -18,6 +22,18 @@
     {
       "src": "/players",
       "dest": "/Index.html"
+    },
+    {
+      "src": "/JerseyBooking.html",
+      "dest": "/JerseyBooking.html"
+    },
+    {
+      "src": "/api.js",
+      "dest": "/api.js"
+    },
+    {
+      "src": "/api-config.js",
+      "dest": "/api-config.js"
     }
   ]
 }
