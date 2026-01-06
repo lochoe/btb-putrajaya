@@ -72,13 +72,35 @@ function handleAPIRequest(e) {
         break;
       case 'searchByEmail':
         var email = e.parameter.email;
-        var players = searchByEmail(email);
-        result = { success: true, data: players };
+        if (!email) {
+          result = { success: false, error: 'Email parameter is required' };
+        } else {
+          try {
+            var players = searchByEmail(email);
+            result = { success: true, data: players };
+          } catch (err) {
+            Logger.log('searchByEmail ERROR: ' + err);
+            result = { success: false, error: 'Error searching by email: ' + err.toString() };
+          }
+        }
         break;
       case 'getPlayerById':
         var rowIndex = parseInt(e.parameter.rowIndex);
-        var player = getPlayerById(rowIndex);
-        result = { success: true, data: player };
+        if (!rowIndex || isNaN(rowIndex)) {
+          result = { success: false, error: 'Invalid rowIndex parameter' };
+        } else {
+          try {
+            var player = getPlayerById(rowIndex);
+            if (!player) {
+              result = { success: false, error: 'Player not found' };
+            } else {
+              result = { success: true, data: player };
+            }
+          } catch (err) {
+            Logger.log('getPlayerById ERROR: ' + err);
+            result = { success: false, error: 'Error getting player: ' + err.toString() };
+          }
+        }
         break;
       default:
         result = { success: false, error: 'Unknown action: ' + action };
@@ -93,14 +115,30 @@ function handleAPIRequest(e) {
   Logger.log('handleAPIRequest: result=' + JSON.stringify(result).substring(0, 200));
   
   // Return JSONP if callback specified, otherwise JSON
-  if (callback) {
-    var jsonpResponse = callback + '(' + JSON.stringify(result) + ');';
-    Logger.log('handleAPIRequest: returning JSONP, length=' + jsonpResponse.length);
-    return ContentService.createTextOutput(jsonpResponse)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  } else {
-    return ContentService.createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
+  // Always ensure we return valid JavaScript/JSON
+  try {
+    if (callback) {
+      // Escape callback name untuk security
+      var safeCallback = callback.replace(/[^a-zA-Z0-9_$]/g, '');
+      var jsonpResponse = safeCallback + '(' + JSON.stringify(result) + ');';
+      Logger.log('handleAPIRequest: returning JSONP, callback=' + safeCallback + ', length=' + jsonpResponse.length);
+      return ContentService.createTextOutput(jsonpResponse)
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    } else {
+      return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (e) {
+    Logger.log('handleAPIRequest: ERROR creating response - ' + e);
+    // Fallback error response
+    var errorResponse = { success: false, error: 'Failed to create response: ' + e.toString() };
+    if (callback) {
+      return ContentService.createTextOutput(callback + '(' + JSON.stringify(errorResponse) + ');')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    } else {
+      return ContentService.createTextOutput(JSON.stringify(errorResponse))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
   }
 }
 
