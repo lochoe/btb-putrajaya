@@ -522,24 +522,38 @@
 
         getPromise
           .then(function(result) {
-            var finalResult = result;
-            if (result && result.success !== undefined) {
-              finalResult = result;
+            console.log('loadPlayer - API response:', result);
+            
+            var playerData = null;
+            
+            // Handle different response formats
+            if (result && result.success && result.data) {
+              // Format: {success: true, data: {...}}
+              playerData = result.data;
             } else if (result && result.data) {
-              finalResult = result;
+              // Format: {data: {...}}
+              playerData = result.data;
+            } else if (result && result.name) {
+              // Format: direct player object
+              playerData = result;
+            } else if (result) {
+              // Try to use result directly
+              playerData = result;
             }
 
-            if (finalResult.success && finalResult.data) {
-              currentPlayer = finalResult.data;
+            if (playerData && playerData.name) {
+              currentPlayer = playerData;
+              console.log('loadPlayer - Player data loaded:', currentPlayer);
               populatePlayerForm(currentPlayer);
               updateAvatar(currentPlayer);
             } else {
-              showMessage('Pemain tidak dijumpai.', 'error');
+              console.error('loadPlayer - Invalid player data:', result);
+              showMessage('Pemain tidak dijumpai atau data tidak sah.', 'error');
             }
           })
           .catch(function(error) {
-            showMessage('Ralat: ' + (error.message || error), 'error');
             console.error('Load player error:', error);
+            showMessage('Ralat: ' + (error.message || error), 'error');
           });
       }
 
@@ -802,7 +816,6 @@
 
             return updatePromise;
           })
-          .then(function(result) {
           .then(function(result) {
             // Handle both image upload error and update error
             if (!result || !result.success) {
