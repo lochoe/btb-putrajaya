@@ -1,6 +1,9 @@
 # Ignore sensitive config file (contains real IDs)
 config.js
 
+# Ignore Vercel build files
+.vercel
+
 # Ignore utility/test files
 code.js
 populateCheckboxes.js
