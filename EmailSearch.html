@@ -244,8 +244,10 @@
           .catch(function(error) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Cari';
-            showMessage('Ralat: ' + (error.message || error), 'error');
+            var errorMsg = error.message || error;
             console.error('Search error:', error);
+            console.error('APPS_SCRIPT_URL:', window.APPS_SCRIPT_URL);
+            showMessage('Ralat: ' + errorMsg, 'error');
           });
       });
     </script>

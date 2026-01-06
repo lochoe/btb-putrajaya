@@ -7,6 +7,14 @@
 // Apps Script Web App URL (akan di-set dalam environment variable atau config)
 const APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || '';
 
+// Log APPS_SCRIPT_URL untuk debug
+if (typeof window !== 'undefined') {
+  console.log('APPS_SCRIPT_URL:', APPS_SCRIPT_URL || 'NOT SET');
+  if (!APPS_SCRIPT_URL) {
+    console.error('WARNING: APPS_SCRIPT_URL tidak diset! Sila pastikan window.APPS_SCRIPT_URL diset sebelum load api.js');
+  }
+}
+
 /**
  * Call Apps Script API using JSONP workaround (for GET requests)
  * Apps Script Web Apps don't support CORS, so we use JSONP for GET requests
@@ -22,20 +30,35 @@ function callAppsScriptAPIGET(action) {
                 '&callback=' + callbackName;
     
     script.src = url;
-    script.onerror = () => {
+    console.log('API callAppsScriptAPIGET - URL:', url);
+    
+    // Timeout after 15 seconds
+    const timeout = setTimeout(() => {
       if (document.body.contains(script)) {
         document.body.removeChild(script);
       }
       delete window[callbackName];
-      reject(new Error('Failed to load API'));
+      reject(new Error('API request timeout. Sila pastikan Apps Script URL betul dan boleh diakses.'));
+    }, 15000);
+    
+    script.onerror = () => {
+      clearTimeout(timeout);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+      delete window[callbackName];
+      console.error('API Error - Failed to load script:', url);
+      reject(new Error('Failed to load API. Sila pastikan Apps Script URL betul: ' + APPS_SCRIPT_URL));
     };
     
     // Set up callback
     window[callbackName] = function(response) {
+      clearTimeout(timeout);
       if (document.body.contains(script)) {
         document.body.removeChild(script);
       }
       delete window[callbackName];
+      console.log('API response:', response);
       resolve(response);
     };
     
@@ -201,20 +224,37 @@ const API = {
       const url = APPS_SCRIPT_URL + '?action=searchByEmail&email=' + encodeURIComponent(email) + 
                   '&callback=' + callbackName;
       script.src = url;
+      console.log('API searchByEmail - URL:', url);
+      
+      // Timeout after 15 seconds
+      const timeout = setTimeout(() => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+        reject(new Error('API request timeout. Sila pastikan Apps Script URL betul dan boleh diakses.'));
+      }, 15000);
+      
       script.onerror = () => {
+        clearTimeout(timeout);
         if (document.body.contains(script)) {
           document.body.removeChild(script);
         }
         delete window[callbackName];
-        reject(new Error('Failed to load API'));
+        console.error('API Error - Failed to load script:', url);
+        reject(new Error('Failed to load API. Sila pastikan Apps Script URL betul: ' + APPS_SCRIPT_URL));
       };
+      
       window[callbackName] = function(response) {
+        clearTimeout(timeout);
         if (document.body.contains(script)) {
           document.body.removeChild(script);
         }
         delete window[callbackName];
+        console.log('API response:', response);
         resolve(response);
       };
+      
       document.body.appendChild(script);
     });
   },
@@ -240,20 +280,37 @@ const API = {
       const url = APPS_SCRIPT_URL + '?action=getPlayerById&rowIndex=' + encodeURIComponent(rowIndex) + 
                   '&callback=' + callbackName;
       script.src = url;
+      console.log('API getPlayerById - URL:', url);
+      
+      // Timeout after 15 seconds
+      const timeout = setTimeout(() => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+        reject(new Error('API request timeout. Sila pastikan Apps Script URL betul dan boleh diakses.'));
+      }, 15000);
+      
       script.onerror = () => {
+        clearTimeout(timeout);
         if (document.body.contains(script)) {
           document.body.removeChild(script);
         }
         delete window[callbackName];
-        reject(new Error('Failed to load API'));
+        console.error('API Error - Failed to load script:', url);
+        reject(new Error('Failed to load API. Sila pastikan Apps Script URL betul: ' + APPS_SCRIPT_URL));
       };
+      
       window[callbackName] = function(response) {
+        clearTimeout(timeout);
         if (document.body.contains(script)) {
           document.body.removeChild(script);
         }
         delete window[callbackName];
+        console.log('API response:', response);
         resolve(response);
       };
+      
       document.body.appendChild(script);
     });
   },

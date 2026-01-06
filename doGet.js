@@ -88,9 +88,15 @@ function handleAPIRequest(e) {
     result = { success: false, error: error.toString() };
   }
   
+  // Log result for debugging
+  Logger.log('handleAPIRequest: action=' + action + ', callback=' + callback);
+  Logger.log('handleAPIRequest: result=' + JSON.stringify(result).substring(0, 200));
+  
   // Return JSONP if callback specified, otherwise JSON
   if (callback) {
-    return ContentService.createTextOutput(callback + '(' + JSON.stringify(result) + ');')
+    var jsonpResponse = callback + '(' + JSON.stringify(result) + ');';
+    Logger.log('handleAPIRequest: returning JSONP, length=' + jsonpResponse.length);
+    return ContentService.createTextOutput(jsonpResponse)
       .setMimeType(ContentService.MimeType.JAVASCRIPT);
   } else {
     return ContentService.createTextOutput(JSON.stringify(result))
