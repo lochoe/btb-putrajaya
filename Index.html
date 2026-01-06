@@ -7,6 +7,13 @@
       Uses: google.script.run.getData() to load player data from Apps Script backend.
     -->
     <title>BTB Putrajaya - Senarai Pemain</title>
+    <!-- Load API helper and set Apps Script URL -->
+    <script>
+      // Set Apps Script URL (update this with your actual Apps Script Web App URL)
+      // This can also be set via environment variable in Vercel
+      window.APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || '';
+    </script>
+    <script src="/api.js"></script>
     <style>
       body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

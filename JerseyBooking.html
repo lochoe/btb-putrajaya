@@ -423,9 +423,52 @@
       <!-- End Players Section -->
     </div>
 
+    <!-- Load API helper -->
     <script>
-      // Preload taken numbers dari server (injected via template)
-      var takenNumbers = <?!= JSON.stringify(takenNumbers || []); ?>;
+      // Set Apps Script URL (update this with your actual Apps Script Web App URL)
+      // This can also be set via environment variable in Vercel
+      window.APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || '';
+    </script>
+    <script src="/api.js"></script>
+    
+    <script>
+      // Load taken numbers - support both Apps Script and Vercel
+      var takenNumbers = [];
+      
+      // Load taken numbers on page load
+      (function loadTakenNumbers() {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          // Running in Apps Script - use google.script.run
+          google.script.run
+            .withSuccessHandler(function(numbers) {
+              takenNumbers = numbers || [];
+              updateTakenNumbersDisplay();
+            })
+            .withFailureHandler(function(error) {
+              console.error('Error loading taken numbers:', error);
+              takenNumbers = [];
+            })
+            .getTakenJerseyNumbers();
+        } else if (typeof API !== 'undefined' && API.getTakenJerseyNumbers) {
+          // Running on Vercel - use API helper
+          API.getTakenJerseyNumbers()
+            .then(function(result) {
+              // Handle both direct array and {success, data} format
+              if (result && result.success && result.data) {
+                takenNumbers = result.data;
+              } else if (Array.isArray(result)) {
+                takenNumbers = result;
+              }
+              updateTakenNumbersDisplay();
+            })
+            .catch(function(error) {
+              console.error('Error loading taken numbers:', error);
+              takenNumbers = [];
+            });
+        } else {
+          console.warn('API helper not available. Taken numbers will not be loaded.');
+        }
+      })();
 
       // Display taken numbers on page load
       function updateTakenNumbersDisplay() {
@@ -512,66 +555,129 @@
             data: base64Data
           };
 
-          // Upload file first
-          google.script.run
-            .withSuccessHandler(function(uploadResult) {
-              if (!uploadResult.success) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Hantar Tempahan';
-                showMessage('Ralat upload resit: ' + uploadResult.message, 'error');
-                return;
-              }
-
-              // File uploaded successfully, now submit form data
-              var bookingData = {
-                playerName: document.getElementById('playerName').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                parentName: document.getElementById('parentName').value.trim(),
-                address: document.getElementById('address').value.trim(),
-                icNumber: document.getElementById('icNumber').value.trim(),
-                jerseySize: document.getElementById('jerseySize').value,
-                jerseyName: document.getElementById('jerseyName').value.trim(),
-                jerseyNumber: Number(document.getElementById('jerseyNumber').value),
-                receiptUrl: uploadResult.fileUrl
-              };
-
-              google.script.run
-                .withSuccessHandler(function (result) {
-                  submitBtn.disabled = false;
-                  submitBtn.textContent = 'Hantar Tempahan';
-
-                  if (result.success) {
-                    showMessage(result.message, 'success');
-                    // Update taken numbers list
-                    if (result.takenNumbers) {
-                      takenNumbers = result.takenNumbers;
-                      updateTakenNumbersDisplay();
-                    }
-                    // Reset form
-                    document.getElementById('jerseyForm').reset();
-                    document.getElementById('receiptPreview').style.display = 'none';
-                  } else {
-                    showMessage(result.message, 'error');
-                    // Update taken numbers if provided
-                    if (result.takenNumbers) {
-                      takenNumbers = result.takenNumbers;
-                      updateTakenNumbersDisplay();
-                    }
-                  }
-                })
-                .withFailureHandler(function (error) {
-                  submitBtn.disabled = false;
-                  submitBtn.textContent = 'Hantar Tempahan';
-                  showMessage('Ralat: ' + error, 'error');
-                })
-                .submitJerseyBooking(bookingData);
-            })
-            .withFailureHandler(function (error) {
+          // Upload file first - support both Apps Script and Vercel
+          var playerName = document.getElementById('playerName').value.trim();
+          var jerseyNumber = document.getElementById('jerseyNumber').value;
+          
+          function handleUpload(uploadResult) {
+            // Handle both direct result and {success, data} format
+            var result = uploadResult;
+            if (uploadResult && uploadResult.success !== undefined) {
+              result = uploadResult;
+            } else if (uploadResult && uploadResult.fileUrl) {
+              result = { success: true, fileUrl: uploadResult.fileUrl };
+            }
+            
+            if (!result.success) {
               submitBtn.disabled = false;
               submitBtn.textContent = 'Hantar Tempahan';
-              showMessage('Ralat upload resit: ' + error, 'error');
-            })
-            .uploadReceipt(fileData, document.getElementById('playerName').value.trim(), document.getElementById('jerseyNumber').value);
+              showMessage('Ralat upload resit: ' + (result.message || 'Unknown error'), 'error');
+              return;
+            }
+
+            // File uploaded successfully, now submit form data
+            var bookingData = {
+              playerName: playerName,
+              email: document.getElementById('email').value.trim(),
+              parentName: document.getElementById('parentName').value.trim(),
+              address: document.getElementById('address').value.trim(),
+              icNumber: document.getElementById('icNumber').value.trim(),
+              jerseySize: document.getElementById('jerseySize').value,
+              jerseyName: document.getElementById('jerseyName').value.trim(),
+              jerseyNumber: Number(jerseyNumber),
+              receiptUrl: result.fileUrl
+            };
+
+            handleSubmit(bookingData);
+          }
+          
+          function handleSubmit(bookingData) {
+            var submitPromise;
+            
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+              // Running in Apps Script
+              submitPromise = new Promise(function(resolve, reject) {
+                google.script.run
+                  .withSuccessHandler(resolve)
+                  .withFailureHandler(reject)
+                  .submitJerseyBooking(bookingData);
+              });
+            } else if (typeof API !== 'undefined' && API.submitJerseyBooking) {
+              // Running on Vercel
+              submitPromise = API.submitJerseyBooking(bookingData);
+            } else {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Hantar Tempahan';
+              showMessage('Error: API tidak tersedia. Sila refresh halaman.', 'error');
+              return;
+            }
+            
+            submitPromise
+              .then(function(result) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Hantar Tempahan';
+
+                // Handle both direct result and {success, data} format
+                var finalResult = result;
+                if (result && result.success !== undefined) {
+                  finalResult = result;
+                } else if (result && result.message) {
+                  finalResult = { success: true, message: result.message, takenNumbers: result.takenNumbers };
+                }
+
+                if (finalResult.success) {
+                  showMessage(finalResult.message || 'Tempahan berjaya disimpan!', 'success');
+                  // Update taken numbers list
+                  if (finalResult.takenNumbers) {
+                    takenNumbers = finalResult.takenNumbers;
+                    updateTakenNumbersDisplay();
+                  }
+                  // Reset form
+                  document.getElementById('jerseyForm').reset();
+                  document.getElementById('receiptPreview').style.display = 'none';
+                } else {
+                  showMessage(finalResult.message || 'Ralat menyimpan tempahan', 'error');
+                  // Update taken numbers if provided
+                  if (finalResult.takenNumbers) {
+                    takenNumbers = finalResult.takenNumbers;
+                    updateTakenNumbersDisplay();
+                  }
+                }
+              })
+              .catch(function(error) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Hantar Tempahan';
+                showMessage('Ralat: ' + (error.message || error), 'error');
+                console.error('Submit error:', error);
+              });
+          }
+          
+          // Upload receipt
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            // Running in Apps Script
+            google.script.run
+              .withSuccessHandler(handleUpload)
+              .withFailureHandler(function(error) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Hantar Tempahan';
+                showMessage('Ralat upload resit: ' + error, 'error');
+              })
+              .uploadReceipt(fileData, playerName, jerseyNumber);
+          } else if (typeof API !== 'undefined' && API.uploadReceipt) {
+            // Running on Vercel
+            API.uploadReceipt(fileData, playerName, jerseyNumber)
+              .then(handleUpload)
+              .catch(function(error) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Hantar Tempahan';
+                showMessage('Ralat upload resit: ' + (error.message || error), 'error');
+                console.error('Upload error:', error);
+              });
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Hantar Tempahan';
+            showMessage('Error: API tidak tersedia. Sila refresh halaman.', 'error');
+          }
         };
         reader.readAsDataURL(receiptFile);
       });

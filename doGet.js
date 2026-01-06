@@ -15,6 +15,12 @@
  */
 function doGet(e) {
   try {
+    // Check if this is an API call (for Vercel/external frontend)
+    if (e.parameter && e.parameter.action) {
+      return handleAPIRequest(e);
+    }
+    
+    // Otherwise, return HTML (existing code)
     // Return JerseyBooking.html as main page (tempahan baju)
     // Client-side JavaScript will handle routing/show-hide
     Logger.log('doGet: loading main page (jersey booking) with client-side routing');
@@ -38,6 +44,113 @@ function doGet(e) {
   } catch (error) {
     Logger.log('doGet: FATAL ERROR - ' + error);
     return HtmlService.createHtmlOutput('<h1>Error</h1><p>' + error.toString() + '</p>');
+  }
+}
+
+/**
+ * Handle API requests (for Vercel/external frontend)
+ * Supports JSONP for CORS workaround
+ */
+function handleAPIRequest(e) {
+  var action = e.parameter.action;
+  var callback = e.parameter.callback; // For JSONP
+  
+  var result;
+  
+  try {
+    switch(action) {
+      case 'getData':
+        var data = getData();
+        result = { success: true, data: data };
+        break;
+      case 'getTakenJerseyNumbers':
+        var numbers = [];
+        if (typeof getTakenJerseyNumbers === 'function') {
+          numbers = getTakenJerseyNumbers();
+        }
+        result = { success: true, data: numbers };
+        break;
+      default:
+        result = { success: false, error: 'Unknown action: ' + action };
+    }
+  } catch (error) {
+    Logger.log('handleAPIRequest ERROR: ' + error);
+    result = { success: false, error: error.toString() };
+  }
+  
+  // Return JSONP if callback specified, otherwise JSON
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + JSON.stringify(result) + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  } else {
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Handle POST requests (for form submissions, file uploads)
+ * Supports JSONP for CORS workaround
+ */
+function doPost(e) {
+  try {
+    var action = e.parameter.action;
+    var callback = e.parameter.callback; // For JSONP
+    var postData = {};
+    
+    // Parse POST data
+    if (e.postData && e.postData.contents) {
+      try {
+        postData = JSON.parse(e.postData.contents);
+      } catch (parseError) {
+        Logger.log('doPost: Error parsing POST data - ' + parseError);
+        postData = {};
+      }
+    }
+    
+    var result;
+    
+    try {
+      switch(action) {
+        case 'uploadReceipt':
+          if (typeof uploadReceipt === 'function') {
+            result = uploadReceipt(
+              postData.fileData,
+              postData.playerName,
+              postData.jerseyNumber
+            );
+          } else {
+            result = { success: false, error: 'uploadReceipt function not found' };
+          }
+          break;
+        case 'submitJerseyBooking':
+          if (typeof submitJerseyBooking === 'function') {
+            result = submitJerseyBooking(postData);
+          } else {
+            result = { success: false, error: 'submitJerseyBooking function not found' };
+          }
+          break;
+        default:
+          result = { success: false, error: 'Unknown action: ' + action };
+      }
+    } catch (error) {
+      Logger.log('doPost ERROR: ' + error);
+      result = { success: false, error: error.toString() };
+    }
+    
+    // Return JSONP if callback specified, otherwise JSON
+    if (callback) {
+      return ContentService.createTextOutput(callback + '(' + JSON.stringify(result) + ');')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    } else {
+      return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (error) {
+    Logger.log('doPost: FATAL ERROR - ' + error);
+    var errorResult = { success: false, error: error.toString() };
+    return ContentService.createTextOutput(JSON.stringify(errorResult))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
