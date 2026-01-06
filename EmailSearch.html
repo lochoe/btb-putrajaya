@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ms">
+  <head>
+    <!--
+      File: EmailSearch.html
+      Purpose: Entry point - visitor enters email to access their registered children
+      Uses: searchByEmail() API to find players by email
+    -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BTB Putrajaya - Masuk</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        margin: 0;
+        padding: 16px;
+        background-color: #f3f4f6;
+        color: #111827;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 480px;
+        width: 100%;
+      }
+
+      .card {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: 0 4px 6px rgba(15, 23, 42, 0.1);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+
+      .title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0 0 8px;
+        color: #111827;
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin: 0;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 1rem;
+        outline: none;
+        background-color: #f9fafb;
+        box-sizing: border-box;
+      }
+
+      .form-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+        background-color: #ffffff;
+      }
+
+      .submit-btn {
+        width: 100%;
+        padding: 12px;
+        background-color: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .submit-btn:hover {
+        background-color: #1d4ed8;
+      }
+
+      .submit-btn:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .message {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 0.875rem;
+      }
+
+      .message.error {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      .message.info {
+        background-color: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <div class="header">
+          <h1 class="title">BTB Putrajaya</h1>
+          <p class="subtitle">Masukkan email yang digunakan semasa pendaftaran</p>
+        </div>
+
+        <div id="messageContainer"></div>
+
+        <form id="emailSearchForm">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input
+              type="email"
+              id="email"
+              class="form-input"
+              required
+              placeholder="contoh@email.com"
+              autocomplete="email"
+            />
+          </div>
+
+          <button type="submit" class="submit-btn" id="submitBtn">
+            Cari
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Load API helper -->
+    <script>
+      // Apps Script Web App URL
+      window.APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzz0bH_cqCc0uojeLXqLCSmZkJnS2H7l3FUO_vLR5ygDmx0NhzBN-9Uwjn0r-DlFmOf/exec';
+    </script>
+    <script src="/api.js"></script>
+
+    <script>
+      /**
+       * showMessage
+       * What: Display success/error message to user
+       * Input: text: string, type: 'error' | 'info'
+       * Output: none (updates DOM)
+       */
+      function showMessage(text, type) {
+        var container = document.getElementById('messageContainer');
+        container.innerHTML = '<div class="message ' + type + '">' + text + '</div>';
+        setTimeout(function () {
+          container.innerHTML = '';
+        }, 5000);
+      }
+
+      /**
+       * Handle form submission
+       */
+      document.getElementById('emailSearchForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var email = document.getElementById('email').value.trim();
+        var submitBtn = document.getElementById('submitBtn');
+
+        if (!email) {
+          showMessage('Sila masukkan email.', 'error');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Mencari...';
+
+        // Call API to search by email
+        var searchPromise;
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          // Running in Apps Script
+          searchPromise = new Promise(function(resolve, reject) {
+            google.script.run
+              .withSuccessHandler(resolve)
+              .withFailureHandler(reject)
+              .searchByEmail(email);
+          });
+        } else if (typeof API !== 'undefined' && API.searchByEmail) {
+          // Running on Vercel
+          searchPromise = API.searchByEmail(email);
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Cari';
+          showMessage('Error: API tidak tersedia. Sila refresh halaman.', 'error');
+          return;
+        }
+
+        searchPromise
+          .then(function(result) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Cari';
+
+            // Handle both direct result and {success, data} format
+            var finalResult = result;
+            if (result && result.success !== undefined) {
+              finalResult = result;
+            } else if (Array.isArray(result)) {
+              finalResult = { success: true, data: result };
+            }
+
+            if (finalResult.success) {
+              // Store email in sessionStorage and redirect to children list
+              sessionStorage.setItem('userEmail', email);
+              sessionStorage.setItem('players', JSON.stringify(finalResult.data || []));
+              
+              // Redirect to children list page
+              if (window.location.pathname.includes('EmailSearch.html')) {
+                window.location.href = '/ChildrenList.html';
+              } else {
+                window.location.href = '/ChildrenList.html?email=' + encodeURIComponent(email);
+              }
+            } else {
+              showMessage(finalResult.message || 'Tiada pemain dijumpai untuk email ini.', 'error');
+            }
+          })
+          .catch(function(error) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Cari';
+            showMessage('Ralat: ' + (error.message || error), 'error');
+            console.error('Search error:', error);
+          });
+      });
+    </script>
+  </body>
+</html>

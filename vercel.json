@@ -13,19 +13,27 @@
   "routes": [
     {
       "src": "/",
-      "dest": "/Index.html"
+      "dest": "/EmailSearch.html"
     },
     {
-      "src": "/jersey",
-      "dest": "/Index.html"
+      "src": "/EmailSearch.html",
+      "dest": "/EmailSearch.html"
     },
     {
-      "src": "/players",
-      "dest": "/Index.html"
+      "src": "/ChildrenList.html",
+      "dest": "/ChildrenList.html"
+    },
+    {
+      "src": "/PlayerProfile.html",
+      "dest": "/PlayerProfile.html"
     },
     {
       "src": "/JerseyBooking.html",
       "dest": "/JerseyBooking.html"
+    },
+    {
+      "src": "/Index.html",
+      "dest": "/Index.html"
     },
     {
       "src": "/api.js",

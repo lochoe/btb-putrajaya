@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="ms">
+  <head>
+    <!--
+      File: PlayerProfile.html
+      Purpose: Player profile page with edit functionality and jersey booking form
+      Uses: getPlayerById(), updatePlayer(), submitJerseyBooking() API
+    -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BTB Putrajaya - Profil Pemain</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        margin: 0;
+        padding: 16px;
+        background-color: #f3f4f6;
+        color: #111827;
+      }
+
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        color: #111827;
+      }
+
+      .back-btn {
+        padding: 8px 16px;
+        background-color: #e5e7eb;
+        color: #374151;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background-color 0.2s;
+      }
+
+      .back-btn:hover {
+        background-color: #d1d5db;
+      }
+
+      .section {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+
+      .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0 0 20px;
+        color: #111827;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 8px;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+      }
+
+      .form-label .required {
+        color: #dc2626;
+      }
+
+      .form-input,
+      .form-select,
+      .form-textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 0.875rem;
+        outline: none;
+        background-color: #f9fafb;
+        box-sizing: border-box;
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .form-input:focus,
+      .form-select:focus,
+      .form-textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+        background-color: #ffffff;
+      }
+
+      .form-input:disabled {
+        background-color: #f3f4f6;
+        cursor: not-allowed;
+      }
+
+      .form-help {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 4px;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: background-color 0.2s;
+      }
+
+      .btn-primary {
+        background-color: #2563eb;
+        color: #ffffff;
+      }
+
+      .btn-primary:hover {
+        background-color: #1d4ed8;
+      }
+
+      .btn-primary:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .btn-secondary {
+        background-color: #e5e7eb;
+        color: #374151;
+      }
+
+      .btn-secondary:hover {
+        background-color: #d1d5db;
+      }
+
+      .btn-edit {
+        background-color: #3b82f6;
+        color: #ffffff;
+      }
+
+      .btn-edit:hover {
+        background-color: #2563eb;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .message {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 0.875rem;
+      }
+
+      .message.success {
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+      }
+
+      .message.error {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      .player-avatar-section {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .player-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 9999px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background-color: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #4b5563;
+        font-size: 2rem;
+      }
+
+      .player-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .bank-info {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        font-size: 0.875rem;
+        line-height: 1.6;
+      }
+
+      .bank-info h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #166534;
+        margin: 0 0 8px;
+      }
+
+      .bank-info p {
+        margin: 4px 0;
+        color: #15803d;
+      }
+
+      .jersey-number-info {
+        background-color: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        font-size: 0.875rem;
+      }
+
+      .taken-numbers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 8px;
+      }
+
+      .taken-badge {
+        background-color: #fee2e2;
+        color: #991b1b;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      input[type="file"] {
+        padding: 6px;
+        cursor: pointer;
+      }
+
+      input[type="file"]::-webkit-file-upload-button {
+        padding: 6px 12px;
+        margin-right: 8px;
+        border: none;
+        border-radius: 6px;
+        background-color: #2563eb;
+        color: #ffffff;
+        font-size: 0.875rem;
+        cursor: pointer;
+      }
+
+      @media (max-width: 640px) {
+        .player-avatar-section {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .form-actions {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <h1 class="title" id="pageTitle">Profil Pemain</h1>
+        <button class="back-btn" onclick="goBack()">← Kembali ke Senarai</button>
+      </div>
+
+      <div id="messageContainer"></div>
+
+      <!-- Player Info Section -->
+      <div class="section" id="playerInfoSection">
+        <h2 class="section-title">Maklumat Pemain</h2>
+        
+        <div class="player-avatar-section">
+          <div class="player-avatar" id="playerAvatar"></div>
+          <div style="flex: 1;">
+            <h3 style="margin: 0 0 8px; font-size: 1.5rem;" id="playerNameDisplay">-</h3>
+            <p style="margin: 0; color: #6b7280; font-size: 0.875rem;" id="playerDetailsDisplay">-</p>
+          </div>
+        </div>
+
+        <div id="playerFormContainer">
+          <form id="playerForm">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+              <div class="form-group">
+                <label class="form-label">
+                  Nama Penuh Pemain <span class="required">*</span>
+                </label>
+                <input type="text" id="name" class="form-input" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  Umur <span class="required">*</span>
+                </label>
+                <input type="number" id="age" class="form-input" required min="1" max="30" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  Email <span class="required">*</span>
+                </label>
+                <input type="email" id="email" class="form-input" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  No. IC Pemain <span class="required">*</span>
+                </label>
+                <input type="text" id="icNumber" class="form-input" required placeholder="123456-78-9012" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  Nama Ibu Bapa Penjaga <span class="required">*</span>
+                </label>
+                <input type="text" id="parentName" class="form-input" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  No. Telefon Ibu Bapa <span class="required">*</span>
+                </label>
+                <input type="tel" id="parentPhone" class="form-input" required />
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">
+                  Alamat <span class="required">*</span>
+                </label>
+                <textarea id="address" class="form-textarea" required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  Sekolah <span class="required">*</span>
+                </label>
+                <input type="text" id="school" class="form-input" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  Tahap Penguasaan <span class="required">*</span>
+                </label>
+                <select id="skillLevel" class="form-select" required>
+                  <option value="">-- Pilih --</option>
+                  <option value="BEGINNER">BEGINNER</option>
+                  <option value="BASIC">BASIC</option>
+                  <option value="INTERMEDIATE">INTERMEDIATE</option>
+                  <option value="ADVANCED">ADVANCED</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  Pencapaian
+                </label>
+                <input type="text" id="achievement" class="form-input" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  Persetujuan Ibu Bapa
+                </label>
+                <input type="text" id="parentConsent" class="form-input" />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="cancelEditBtn" onclick="cancelEdit()" style="display: none;">Batal</button>
+              <button type="button" class="btn btn-edit" id="editBtn" onclick="enableEdit()">Edit Maklumat</button>
+              <button type="submit" class="btn btn-primary" id="saveBtn" style="display: none;">Simpan Perubahan</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Jersey Booking Section -->
+      <div class="section" id="jerseySection">
+        <h2 class="section-title">Tempahan Baju</h2>
+
+        <div class="bank-info">
+          <h3>Maklumat Bank untuk Bayaran</h3>
+          <p><strong>Bank:</strong> AFFIN BANK</p>
+          <p><strong>No. Akaun:</strong> 1004 9002 1285</p>
+          <p><strong>Nama Akaun:</strong> STICK AND BALL HOCKEY CLUB</p>
+          <p><strong>Remark:</strong> Nama Anak</p>
+        </div>
+
+        <form id="jerseyForm">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">
+                Saiz Baju <span class="required">*</span>
+              </label>
+              <select id="jerseySize" class="form-select" required>
+                <option value="">-- Pilih Saiz --</option>
+                <option value="XS">XS</option>
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Nama di Jersi <span class="required">*</span>
+              </label>
+              <input type="text" id="jerseyName" class="form-input" required maxlength="20" />
+              <div class="form-help">Maksimum 20 aksara</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Nombor Jersi <span class="required">*</span>
+              </label>
+              <input type="number" id="jerseyNumber" class="form-input" required min="30" max="999" />
+              <div class="form-help">Nombor antara 30 hingga 999 (mesti unik)</div>
+              <div class="jersey-number-info" id="jerseyInfo" style="display: none;">
+                <strong>Nombor yang sudah dipesan:</strong>
+                <div class="taken-numbers" id="takenNumbersList"></div>
+              </div>
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">
+                Resit Bayaran <span class="required">*</span>
+              </label>
+              <input type="file" id="receiptFile" class="form-input" accept="image/*,.pdf" required />
+              <div class="form-help">Upload resit bayaran (Gambar atau PDF)</div>
+              <div id="receiptPreview" style="margin-top: 8px; display: none;">
+                <img id="receiptPreviewImg" src="" alt="Receipt preview" style="max-width: 200px; border-radius: 8px; border: 1px solid #d1d5db;" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="submitJerseyBtn">Hantar Tempahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Load API helper -->
+    <script>
+      // Apps Script Web App URL
+      window.APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzz0bH_cqCc0uojeLXqLCSmZkJnS2H7l3FUO_vLR5ygDmx0NhzBN-9Uwjn0r-DlFmOf/exec';
+    </script>
+    <script src="/api.js"></script>
+
+    <script>
+      var currentPlayer = null;
+      var currentRowIndex = null;
+      var isEditMode = false;
+      var isNewPlayer = false;
+      var takenNumbers = [];
+      var originalFormData = {};
+
+      /**
+       * Initialize page
+       */
+      function init() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var action = urlParams.get('action');
+        var rowIndex = urlParams.get('rowIndex') || sessionStorage.getItem('currentRowIndex');
+
+        if (action === 'add') {
+          // Adding new player
+          isNewPlayer = true;
+          isEditMode = true;
+          document.getElementById('pageTitle').textContent = 'Tambah Anak Baru';
+          
+          // Pre-fill email from sessionStorage if available
+          var userEmail = sessionStorage.getItem('userEmail');
+          if (userEmail) {
+            document.getElementById('email').value = userEmail;
+          }
+          
+          // Enable edit mode (all fields editable)
+          var inputs = document.getElementById('playerForm').querySelectorAll('input, select, textarea');
+          inputs.forEach(function(input) {
+            input.disabled = false;
+          });
+          document.getElementById('editBtn').style.display = 'none';
+          document.getElementById('saveBtn').style.display = 'inline-block';
+          document.getElementById('cancelEditBtn').style.display = 'inline-block';
+          
+          loadTakenNumbers();
+        } else if (rowIndex) {
+          // Viewing/editing existing player
+          currentRowIndex = parseInt(rowIndex);
+          loadPlayer(currentRowIndex);
+          loadTakenNumbers();
+        } else {
+          showMessage('Ralat: Tiada maklumat pemain.', 'error');
+        }
+      }
+
+      /**
+       * Load player data
+       */
+      function loadPlayer(rowIndex) {
+        var getPromise;
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          getPromise = new Promise(function(resolve, reject) {
+            google.script.run
+              .withSuccessHandler(resolve)
+              .withFailureHandler(reject)
+              .getPlayerById(rowIndex);
+          });
+        } else if (typeof API !== 'undefined' && API.getPlayerById) {
+          getPromise = API.getPlayerById(rowIndex);
+        } else {
+          showMessage('Error: API tidak tersedia.', 'error');
+          return;
+        }
+
+        getPromise
+          .then(function(result) {
+            var finalResult = result;
+            if (result && result.success !== undefined) {
+              finalResult = result;
+            } else if (result && result.data) {
+              finalResult = result;
+            }
+
+            if (finalResult.success && finalResult.data) {
+              currentPlayer = finalResult.data;
+              populatePlayerForm(currentPlayer);
+              updateAvatar(currentPlayer);
+            } else {
+              showMessage('Pemain tidak dijumpai.', 'error');
+            }
+          })
+          .catch(function(error) {
+            showMessage('Ralat: ' + (error.message || error), 'error');
+            console.error('Load player error:', error);
+          });
+      }
+
+      /**
+       * Populate player form with data
+       */
+      function populatePlayerForm(player) {
+        document.getElementById('name').value = player.name || '';
+        document.getElementById('age').value = player.age || '';
+        document.getElementById('email').value = player.email || '';
+        document.getElementById('icNumber').value = player.icNumber || '';
+        document.getElementById('parentName').value = player.parentName || '';
+        document.getElementById('parentPhone').value = player.parentPhone || '';
+        document.getElementById('address').value = player.address || '';
+        document.getElementById('school').value = player.school || '';
+        document.getElementById('skillLevel').value = player.skillLevel || '';
+        document.getElementById('achievement').value = player.achievement || '';
+        document.getElementById('parentConsent').value = player.parentConsent || '';
+
+        // Populate jersey form with player data
+        document.getElementById('jerseyForm').querySelector('[name="playerName"]') || 
+        (function() {
+          var hiddenInput = document.createElement('input');
+          hiddenInput.type = 'hidden';
+          hiddenInput.name = 'playerName';
+          hiddenInput.id = 'jerseyPlayerName';
+          document.getElementById('jerseyForm').appendChild(hiddenInput);
+        })();
+        document.getElementById('jerseyPlayerName').value = player.name || '';
+
+        updateDisplay();
+        saveOriginalFormData();
+      }
+
+      /**
+       * Update avatar and display
+       */
+      function updateAvatar(player) {
+        var avatar = document.getElementById('playerAvatar');
+        if (player.imageUrl) {
+          avatar.innerHTML = '<img src="' + player.imageUrl + '" alt="' + (player.name || 'Pemain') + '" />';
+        } else {
+          var initials = (player.name || '')
+            .split(' ')
+            .filter(function(part) { return part && part.length > 0; })
+            .slice(0, 2)
+            .map(function(part) { return part.charAt(0).toUpperCase(); })
+            .join('');
+          avatar.textContent = initials || '?';
+        }
+      }
+
+      /**
+       * Update display name and details
+       */
+      function updateDisplay() {
+        var name = document.getElementById('name').value || '-';
+        var school = document.getElementById('school').value || '-';
+        var age = document.getElementById('age').value ? document.getElementById('age').value + ' tahun' : '-';
+        
+        document.getElementById('playerNameDisplay').textContent = name;
+        document.getElementById('playerDetailsDisplay').textContent = school + ' • ' + age;
+      }
+
+      /**
+       * Save original form data
+       */
+      function saveOriginalFormData() {
+        var form = document.getElementById('playerForm');
+        var inputs = form.querySelectorAll('input, select, textarea');
+        originalFormData = {};
+        inputs.forEach(function(input) {
+          originalFormData[input.id] = input.value;
+        });
+      }
+
+      /**
+       * Enable edit mode
+       */
+      function enableEdit() {
+        isEditMode = true;
+        var inputs = document.getElementById('playerForm').querySelectorAll('input, select, textarea');
+        inputs.forEach(function(input) {
+          input.disabled = false;
+        });
+        document.getElementById('editBtn').style.display = 'none';
+        document.getElementById('saveBtn').style.display = 'inline-block';
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+      }
+
+      /**
+       * Cancel edit
+       */
+      function cancelEdit() {
+        if (isNewPlayer) {
+          // For new player, go back to children list
+          if (confirm('Batal menambah pemain baru? Perubahan tidak akan disimpan.')) {
+            goBack();
+          }
+          return;
+        }
+        
+        isEditMode = false;
+        var inputs = document.getElementById('playerForm').querySelectorAll('input, select, textarea');
+        inputs.forEach(function(input) {
+          input.disabled = true;
+        });
+        
+        // Restore original values
+        Object.keys(originalFormData).forEach(function(key) {
+          var input = document.getElementById(key);
+          if (input) {
+            input.value = originalFormData[key];
+          }
+        });
+        
+        document.getElementById('editBtn').style.display = 'inline-block';
+        document.getElementById('saveBtn').style.display = 'none';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        updateDisplay();
+      }
+
+      /**
+       * Handle player form submit
+       */
+      document.getElementById('playerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (!isEditMode) {
+          return;
+        }
+
+        var formData = {
+          name: document.getElementById('name').value.trim(),
+          age: document.getElementById('age').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          icNumber: document.getElementById('icNumber').value.trim(),
+          parentName: document.getElementById('parentName').value.trim(),
+          parentPhone: document.getElementById('parentPhone').value.trim(),
+          address: document.getElementById('address').value.trim(),
+          school: document.getElementById('school').value.trim(),
+          skillLevel: document.getElementById('skillLevel').value,
+          achievement: document.getElementById('achievement').value.trim(),
+          parentConsent: document.getElementById('parentConsent').value.trim()
+        };
+
+        // Validate required fields
+        if (!formData.name || !formData.age || !formData.email || !formData.icNumber || 
+            !formData.parentName || !formData.parentPhone || !formData.address || !formData.school || !formData.skillLevel) {
+          showMessage('Sila isi semua medan yang wajib.', 'error');
+          return;
+        }
+
+        var saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Menyimpan...';
+
+        var updatePromise;
+        
+        if (isNewPlayer) {
+          // Add new player
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            updatePromise = new Promise(function(resolve, reject) {
+              google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .addPlayer(formData);
+            });
+          } else if (typeof API !== 'undefined' && API.addPlayer) {
+            updatePromise = API.addPlayer(formData);
+          }
+        } else {
+          // Update existing player
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            updatePromise = new Promise(function(resolve, reject) {
+              google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .updatePlayer(currentRowIndex, formData);
+            });
+          } else if (typeof API !== 'undefined' && API.updatePlayer) {
+            updatePromise = API.updatePlayer(currentRowIndex, formData);
+          }
+        }
+
+        if (!updatePromise) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Simpan Perubahan';
+          showMessage('Error: API tidak tersedia.', 'error');
+          return;
+        }
+
+        updatePromise
+          .then(function(result) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Simpan Perubahan';
+
+            var finalResult = result;
+            if (result && result.success !== undefined) {
+              finalResult = result;
+            }
+
+            if (finalResult.success) {
+              showMessage('Maklumat pemain berjaya disimpan!', 'success');
+              saveOriginalFormData();
+              
+              // If new player, update rowIndex and reload player data
+              if (isNewPlayer && finalResult.rowIndex) {
+                currentRowIndex = finalResult.rowIndex;
+                isNewPlayer = false;
+                // Reload player to get full data
+                loadPlayer(currentRowIndex);
+              } else {
+                // Existing player - disable edit mode
+                isEditMode = false;
+                var inputs = document.getElementById('playerForm').querySelectorAll('input, select, textarea');
+                inputs.forEach(function(input) {
+                  input.disabled = true;
+                });
+                document.getElementById('editBtn').style.display = 'inline-block';
+                document.getElementById('saveBtn').style.display = 'none';
+                document.getElementById('cancelEditBtn').style.display = 'none';
+              }
+            } else {
+              showMessage(finalResult.message || 'Ralat menyimpan maklumat.', 'error');
+            }
+          })
+          .catch(function(error) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Simpan Perubahan';
+            showMessage('Ralat: ' + (error.message || error), 'error');
+            console.error('Save error:', error);
+          });
+      });
+
+      /**
+       * Load taken jersey numbers
+       */
+      function loadTakenNumbers() {
+        var getPromise;
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          getPromise = new Promise(function(resolve, reject) {
+            google.script.run
+              .withSuccessHandler(resolve)
+              .withFailureHandler(reject)
+              .getTakenJerseyNumbers();
+          });
+        } else if (typeof API !== 'undefined' && API.getTakenJerseyNumbers) {
+          getPromise = API.getTakenJerseyNumbers();
+        } else {
+          return;
+        }
+
+        getPromise
+          .then(function(result) {
+            var finalResult = result;
+            if (result && result.success && result.data) {
+              takenNumbers = result.data;
+            } else if (Array.isArray(result)) {
+              takenNumbers = result;
+            }
+            updateTakenNumbersDisplay();
+          })
+          .catch(function(error) {
+            console.error('Error loading taken numbers:', error);
+          });
+      }
+
+      /**
+       * Update taken numbers display
+       */
+      function updateTakenNumbersDisplay() {
+        var infoDiv = document.getElementById('jerseyInfo');
+        var listDiv = document.getElementById('takenNumbersList');
+
+        if (takenNumbers && takenNumbers.length > 0) {
+          infoDiv.style.display = 'block';
+          listDiv.innerHTML = '';
+          takenNumbers.sort(function(a, b) { return a - b; }).forEach(function(num) {
+            var badge = document.createElement('span');
+            badge.className = 'taken-badge';
+            badge.textContent = num;
+            listDiv.appendChild(badge);
+          });
+        } else {
+          infoDiv.style.display = 'none';
+        }
+      }
+
+      /**
+       * Handle jersey form submit
+       */
+      document.getElementById('jerseyForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        var submitBtn = document.getElementById('submitJerseyBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sedang menghantar...';
+
+        var receiptFile = document.getElementById('receiptFile').files[0];
+        if (!receiptFile) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Hantar Tempahan';
+          showMessage('Sila pilih resit bayaran.', 'error');
+          return;
+        }
+
+        // Get player data from form
+        var playerName = document.getElementById('name').value.trim();
+        var email = document.getElementById('email').value.trim();
+        var parentName = document.getElementById('parentName').value.trim();
+        var address = document.getElementById('address').value.trim();
+        var icNumber = document.getElementById('icNumber').value.trim();
+
+        // Convert file to base64
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var base64Data = e.target.result.split(',')[1];
+          var fileData = {
+            name: receiptFile.name,
+            type: receiptFile.type,
+            data: base64Data
+          };
+
+          var jerseyNumber = Number(document.getElementById('jerseyNumber').value);
+
+          // Upload receipt first
+          var uploadPromise;
+          
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            uploadPromise = new Promise(function(resolve, reject) {
+              google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .uploadReceipt(fileData, playerName, jerseyNumber);
+            });
+          } else if (typeof API !== 'undefined' && API.uploadReceipt) {
+            uploadPromise = API.uploadReceipt(fileData, playerName, jerseyNumber);
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Hantar Tempahan';
+            showMessage('Error: API tidak tersedia.', 'error');
+            return;
+          }
+
+          uploadPromise
+            .then(function(uploadResult) {
+              var result = uploadResult;
+              if (uploadResult && uploadResult.success !== undefined) {
+                result = uploadResult;
+              } else if (uploadResult && uploadResult.fileUrl) {
+                result = { success: true, fileUrl: uploadResult.fileUrl };
+              }
+
+              if (!result.success) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Hantar Tempahan';
+                showMessage('Ralat upload resit: ' + (result.message || 'Unknown error'), 'error');
+                return;
+              }
+
+              // Submit jersey booking
+              var bookingData = {
+                playerName: playerName,
+                email: email,
+                parentName: parentName,
+                address: address,
+                icNumber: icNumber,
+                jerseySize: document.getElementById('jerseySize').value,
+                jerseyName: document.getElementById('jerseyName').value.trim(),
+                jerseyNumber: jerseyNumber,
+                receiptUrl: result.fileUrl
+              };
+
+              var submitPromise;
+              
+              if (typeof google !== 'undefined' && google.script && google.script.run) {
+                submitPromise = new Promise(function(resolve, reject) {
+                  google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)
+                    .submitJerseyBooking(bookingData);
+                });
+              } else if (typeof API !== 'undefined' && API.submitJerseyBooking) {
+                submitPromise = API.submitJerseyBooking(bookingData);
+              } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Hantar Tempahan';
+                showMessage('Error: API tidak tersedia.', 'error');
+                return;
+              }
+
+              submitPromise
+                .then(function(submitResult) {
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = 'Hantar Tempahan';
+
+                  var finalResult = submitResult;
+                  if (submitResult && submitResult.success !== undefined) {
+                    finalResult = submitResult;
+                  }
+
+                  if (finalResult.success) {
+                    showMessage(finalResult.message || 'Tempahan berjaya disimpan!', 'success');
+                    document.getElementById('jerseyForm').reset();
+                    document.getElementById('receiptPreview').style.display = 'none';
+                    
+                    // Update taken numbers
+                    if (finalResult.takenNumbers) {
+                      takenNumbers = finalResult.takenNumbers;
+                      updateTakenNumbersDisplay();
+                    }
+                  } else {
+                    showMessage(finalResult.message || 'Ralat menyimpan tempahan', 'error');
+                  }
+                })
+                .catch(function(error) {
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = 'Hantar Tempahan';
+                  showMessage('Ralat: ' + (error.message || error), 'error');
+                  console.error('Submit error:', error);
+                });
+            })
+            .catch(function(error) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Hantar Tempahan';
+              showMessage('Ralat upload resit: ' + (error.message || error), 'error');
+              console.error('Upload error:', error);
+            });
+        };
+        reader.readAsDataURL(receiptFile);
+      });
+
+      /**
+       * Preview receipt file
+       */
+      document.getElementById('receiptFile').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        var preview = document.getElementById('receiptPreview');
+        var previewImg = document.getElementById('receiptPreviewImg');
+        
+        if (file && file.type.startsWith('image/')) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        } else {
+          preview.style.display = 'none';
+        }
+      });
+
+      /**
+       * Validate jersey number on input
+       */
+      document.getElementById('jerseyNumber').addEventListener('input', function(e) {
+        var num = Number(e.target.value);
+        var input = e.target;
+
+        if (isNaN(num) || num < 30 || num > 999) {
+          input.classList.add('error');
+        } else {
+          input.classList.remove('error');
+          if (takenNumbers.indexOf(num) !== -1) {
+            input.classList.add('error');
+            showMessage('Nombor ' + num + ' sudah dipesan. Sila pilih nombor lain.', 'error');
+          }
+        }
+      });
+
+      /**
+       * Update display on input change
+       */
+      ['name', 'school', 'age'].forEach(function(id) {
+        document.getElementById(id).addEventListener('input', updateDisplay);
+      });
+
+      /**
+       * Show message
+       */
+      function showMessage(text, type) {
+        var container = document.getElementById('messageContainer');
+        container.innerHTML = '<div class="message ' + type + '">' + text + '</div>';
+        setTimeout(function () {
+          container.innerHTML = '';
+        }, 5000);
+      }
+
+      /**
+       * Go back to children list
+       */
+      function goBack() {
+        window.location.href = '/ChildrenList.html';
+      }
+
+      // Initialize on page load
+      init();
+    </script>
+  </body>
+</html>

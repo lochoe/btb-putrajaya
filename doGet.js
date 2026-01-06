@@ -70,6 +70,16 @@ function handleAPIRequest(e) {
         }
         result = { success: true, data: numbers };
         break;
+      case 'searchByEmail':
+        var email = e.parameter.email;
+        var players = searchByEmail(email);
+        result = { success: true, data: players };
+        break;
+      case 'getPlayerById':
+        var rowIndex = parseInt(e.parameter.rowIndex);
+        var player = getPlayerById(rowIndex);
+        result = { success: true, data: player };
+        break;
       default:
         result = { success: false, error: 'Unknown action: ' + action };
     }
@@ -150,6 +160,28 @@ function doPost(e) {
           } else {
             result = { success: false, error: 'submitJerseyBooking function not found' };
           }
+          break;
+        case 'updatePlayer':
+          var rowIndex = postData.rowIndex ? parseInt(postData.rowIndex) : null;
+          var playerData = postData.playerData || postData;
+          if (rowIndex === null) {
+            result = { success: false, error: 'rowIndex is required' };
+          } else {
+            result = updatePlayer(rowIndex, playerData);
+          }
+          break;
+        case 'deletePlayer':
+          var rowIndexToDelete = postData.rowIndex ? parseInt(postData.rowIndex) : null;
+          var confirmEmail = postData.email || postData.confirmEmail;
+          if (rowIndexToDelete === null || !confirmEmail) {
+            result = { success: false, error: 'rowIndex and email are required' };
+          } else {
+            result = deletePlayer(rowIndexToDelete, confirmEmail);
+          }
+          break;
+        case 'addPlayer':
+          var newPlayerData = postData.playerData || postData;
+          result = addPlayer(newPlayerData);
           break;
         default:
           result = { success: false, error: 'Unknown action: ' + action };
@@ -264,7 +296,11 @@ function getPlayersListContent() {
     }
 
     var result = data.map(function (row, idx) {
+      // rowIndex is 1-based in Google Sheets (row 1 = headers, row 2 = first data)
+      var rowIndex = idx + 2;
+      
       var player = {
+        rowIndex: rowIndex,
         timestamp: row[0],
         email: row[1],
         name: row[2],
@@ -276,7 +312,8 @@ function getPlayersListContent() {
         skillLevel: row[8],
         achievement: row[9],
         parentConsent: row[10],
-        imageUrl: transformImageUrl(row[11]) // Handle missing or non-standard image URLs
+        imageUrl: transformImageUrl(row[11]), // Handle missing or non-standard image URLs
+        icNumber: row[12] || '' // IC number (may not exist in old data)
       };
 
       // Log a few first rows for verification
@@ -294,3 +331,282 @@ function getPlayersListContent() {
     return [];
   }
   }
+
+/**
+ * searchByEmail
+ * What: Search for players by email address
+ * Input: email: string
+ * Output: Player[] (array of players with matching email)
+ * Side effects: none (read-only)
+ * Errors: returns [] on error
+ */
+function searchByEmail(email) {
+  try {
+    if (!email) {
+      return [];
+    }
+
+    var allPlayers = getData();
+    var emailLower = email.toLowerCase().trim();
+    
+    var filtered = allPlayers.filter(function(player) {
+      return player.email && player.email.toLowerCase().trim() === emailLower;
+    });
+
+    Logger.log('searchByEmail: found ' + filtered.length + ' players for email ' + email);
+    return filtered;
+  } catch (e) {
+    Logger.log('searchByEmail: ERROR = ' + e);
+    return [];
+  }
+}
+
+/**
+ * getPlayerById
+ * What: Get a single player by row index
+ * Input: rowIndex: number (1-based row number in Google Sheets)
+ * Output: Player object or null
+ * Side effects: none (read-only)
+ * Errors: returns null on error
+ */
+function getPlayerById(rowIndex) {
+  try {
+    if (!rowIndex || rowIndex < 2) {
+      Logger.log('getPlayerById: invalid rowIndex ' + rowIndex);
+      return null;
+    }
+
+    var registrationSheetId = typeof CONFIG !== 'undefined' && CONFIG.registrationSheetId;
+    if (!registrationSheetId) {
+      Logger.log('getPlayerById: registrationSheetId missing');
+      return null;
+    }
+
+    var spreadsheet = SpreadsheetApp.openById(registrationSheetId);
+    var sheet = spreadsheet.getSheetByName('Form Responses 1');
+    
+    if (!sheet) {
+      Logger.log('getPlayerById: sheet not found');
+      return null;
+    }
+
+    var row = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
+    if (!row || row.length === 0) {
+      Logger.log('getPlayerById: row ' + rowIndex + ' not found or empty');
+      return null;
+    }
+
+    // Transform image URL
+    function transformImageUrl(rawUrl) {
+      if (!rawUrl) return '';
+      var idParamMatch = rawUrl.match(/[?&]id=([^&]+)/);
+      var pathMatch = rawUrl.match(/\/d\/([-\w]{10,})/);
+      var fileId = idParamMatch ? idParamMatch[1] : (pathMatch ? pathMatch[1] : null);
+      return fileId ? 'https://drive.google.com/uc?export=view&id=' + fileId : rawUrl;
+    }
+
+    var player = {
+      rowIndex: rowIndex,
+      timestamp: row[0],
+      email: row[1],
+      name: row[2],
+      age: row[3],
+      parentName: row[4],
+      parentPhone: row[5],
+      address: row[6],
+      school: row[7],
+      skillLevel: row[8],
+      achievement: row[9],
+      parentConsent: row[10],
+      imageUrl: transformImageUrl(row[11]),
+      icNumber: row[12] || ''
+    };
+
+    Logger.log('getPlayerById: returning player ' + rowIndex);
+    return player;
+  } catch (e) {
+    Logger.log('getPlayerById: ERROR = ' + e);
+    return null;
+  }
+}
+
+/**
+ * updatePlayer
+ * What: Update player information in Google Sheets
+ * Input: rowIndex: number, playerData: object
+ * Output: {success: boolean, message?: string}
+ * Side effects: writes to Google Sheets
+ * Errors: returns {success: false, message: "..."}
+ */
+function updatePlayer(rowIndex, playerData) {
+  try {
+    if (!rowIndex || rowIndex < 2) {
+      return { success: false, message: 'Invalid row index' };
+    }
+
+    var registrationSheetId = typeof CONFIG !== 'undefined' && CONFIG.registrationSheetId;
+    if (!registrationSheetId) {
+      return { success: false, message: 'Configuration error: registrationSheetId missing' };
+    }
+
+    var spreadsheet = SpreadsheetApp.openById(registrationSheetId);
+    var sheet = spreadsheet.getSheetByName('Form Responses 1');
+    
+    if (!sheet) {
+      return { success: false, message: 'Sheet not found' };
+    }
+
+    // Verify row exists
+    if (rowIndex > sheet.getLastRow()) {
+      return { success: false, message: 'Row not found' };
+    }
+
+    // Get current row to preserve timestamp and email
+    var currentRow = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    // Update row data (preserve timestamp[0] and email[1])
+    var newRow = [
+      currentRow[0], // timestamp - preserve original
+      playerData.email || currentRow[1], // email - update if provided, otherwise preserve
+      playerData.name || '',
+      playerData.age || '',
+      playerData.parentName || '',
+      playerData.parentPhone || '',
+      playerData.address || '',
+      playerData.school || '',
+      playerData.skillLevel || '',
+      playerData.achievement || '',
+      playerData.parentConsent || '',
+      currentRow[11] || '', // imageUrl - preserve original
+      playerData.icNumber || '' // icNumber - new column
+    ];
+
+    // Write to sheet (starting from column 1)
+    sheet.getRange(rowIndex, 1, 1, newRow.length).setValues([newRow]);
+    SpreadsheetApp.flush();
+
+    Logger.log('updatePlayer: updated row ' + rowIndex);
+    return { success: true, message: 'Maklumat pemain berjaya dikemaskini' };
+  } catch (e) {
+    Logger.log('updatePlayer: ERROR = ' + e);
+    return { success: false, message: 'Ralat: ' + e.toString() };
+  }
+}
+
+/**
+ * deletePlayer
+ * What: Delete a player row from Google Sheets (with email confirmation)
+ * Input: rowIndex: number, email: string (for confirmation)
+ * Output: {success: boolean, message?: string}
+ * Side effects: deletes row from Google Sheets
+ * Errors: returns {success: false, message: "..."}
+ */
+function deletePlayer(rowIndex, email) {
+  try {
+    if (!rowIndex || rowIndex < 2) {
+      return { success: false, message: 'Invalid row index' };
+    }
+
+    if (!email) {
+      return { success: false, message: 'Email diperlukan untuk pengesahan' };
+    }
+
+    var registrationSheetId = typeof CONFIG !== 'undefined' && CONFIG.registrationSheetId;
+    if (!registrationSheetId) {
+      return { success: false, message: 'Configuration error: registrationSheetId missing' };
+    }
+
+    var spreadsheet = SpreadsheetApp.openById(registrationSheetId);
+    var sheet = spreadsheet.getSheetByName('Form Responses 1');
+    
+    if (!sheet) {
+      return { success: false, message: 'Sheet not found' };
+    }
+
+    // Verify row exists and email matches
+    if (rowIndex > sheet.getLastRow()) {
+      return { success: false, message: 'Row not found' };
+    }
+
+    var currentRow = sheet.getRange(rowIndex, 1, 1, 2).getValues()[0];
+    var currentEmail = (currentRow[1] || '').toLowerCase().trim();
+    var confirmEmail = email.toLowerCase().trim();
+
+    if (currentEmail !== confirmEmail) {
+      return { success: false, message: 'Email tidak sepadan. Padaman dibatalkan.' };
+    }
+
+    // Delete the row
+    sheet.deleteRow(rowIndex);
+    SpreadsheetApp.flush();
+
+    Logger.log('deletePlayer: deleted row ' + rowIndex);
+    return { success: true, message: 'Pemain berjaya dipadam' };
+  } catch (e) {
+    Logger.log('deletePlayer: ERROR = ' + e);
+    return { success: false, message: 'Ralat: ' + e.toString() };
+  }
+}
+
+/**
+ * addPlayer
+ * What: Add a new player row to Google Sheets
+ * Input: playerData: object
+ * Output: {success: boolean, rowIndex?: number, message?: string}
+ * Side effects: adds new row to Google Sheets
+ * Errors: returns {success: false, message: "..."}
+ */
+function addPlayer(playerData) {
+  try {
+    if (!playerData) {
+      return { success: false, message: 'Data pemain diperlukan' };
+    }
+
+    var registrationSheetId = typeof CONFIG !== 'undefined' && CONFIG.registrationSheetId;
+    if (!registrationSheetId) {
+      return { success: false, message: 'Configuration error: registrationSheetId missing' };
+    }
+
+    var spreadsheet = SpreadsheetApp.openById(registrationSheetId);
+    var sheet = spreadsheet.getSheetByName('Form Responses 1');
+    
+    if (!sheet) {
+      return { success: false, message: 'Sheet not found' };
+    }
+
+    // Prepare new row
+    var timestamp = new Date();
+    var newRow = [
+      timestamp, // timestamp
+      playerData.email || '',
+      playerData.name || '',
+      playerData.age || '',
+      playerData.parentName || '',
+      playerData.parentPhone || '',
+      playerData.address || '',
+      playerData.school || '',
+      playerData.skillLevel || '',
+      playerData.achievement || '',
+      playerData.parentConsent || '',
+      '', // imageUrl - empty for new player
+      playerData.icNumber || '' // icNumber
+    ];
+
+    // Append new row
+    sheet.appendRow(newRow);
+    SpreadsheetApp.flush();
+
+    // Get the row index of the newly added row
+    var newRowIndex = sheet.getLastRow();
+
+    Logger.log('addPlayer: added new player at row ' + newRowIndex);
+    return { 
+      success: true, 
+      rowIndex: newRowIndex,
+      message: 'Pemain baru berjaya ditambah' 
+    };
+  } catch (e) {
+    Logger.log('addPlayer: ERROR = ' + e);
+    return { success: false, message: 'Ralat: ' + e.toString() };
+  }
+}
