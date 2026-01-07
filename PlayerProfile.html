@@ -469,6 +469,111 @@
       var originalFormData = {};
 
       /**
+       * Upload image to ImageBB via Vercel Serverless Function
+       * API key disimpan dalam environment variable (selamat)
+       */
+      function uploadToImageBB(file) {
+        return new Promise(function(resolve, reject) {
+          // Check file size (max 32MB for ImageBB free tier)
+          if (file.size > 32 * 1024 * 1024) {
+            reject(new Error('Saiz fail terlalu besar. Maksimum 32MB untuk ImageBB.'));
+            return;
+          }
+
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var base64Data = e.target.result.split(',')[1];
+            
+            // Upload via Vercel serverless function (API key dalam env var - selamat)
+            fetch('/api/upload-image', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                imageData: base64Data
+              })
+            })
+            .then(function(response) {
+              if (!response.ok) {
+                return response.json().then(function(err) {
+                  throw new Error(err.error || 'Upload failed');
+                });
+              }
+              return response.json();
+            })
+            .then(function(result) {
+              if (result.success && result.fileUrl) {
+                resolve(result);
+              } else {
+                reject(new Error(result.error || 'Upload failed - unknown error'));
+              }
+            })
+            .catch(function(error) {
+              reject(new Error('Ralat upload ke ImageBB: ' + (error.message || error)));
+            });
+          };
+          
+          reader.onerror = function(error) {
+            reject(new Error('Ralat membaca fail: ' + error));
+          };
+          
+          reader.readAsDataURL(file);
+        });
+      }
+       * Direct upload from browser - no server needed
+       */
+      function uploadToImageBB(file) {
+        return new Promise(function(resolve, reject) {
+          // Check file size (max 32MB for ImageBB free tier)
+          if (file.size > 32 * 1024 * 1024) {
+            reject(new Error('Saiz fail terlalu besar. Maksimum 32MB untuk ImageBB.'));
+            return;
+          }
+
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var base64Data = e.target.result.split(',')[1];
+            
+            // Upload via Vercel serverless function (API key dalam env var - selamat)
+            fetch('/api/upload-image', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                imageData: base64Data
+              })
+            })
+            .then(function(response) {
+              if (!response.ok) {
+                return response.json().then(function(err) {
+                  throw new Error(err.error || 'Upload failed');
+                });
+              }
+              return response.json();
+            })
+            .then(function(result) {
+              if (result.success && result.fileUrl) {
+                resolve(result);
+              } else {
+                reject(new Error(result.error || 'Upload failed - unknown error'));
+              }
+            })
+            .catch(function(error) {
+              reject(new Error('Ralat upload ke ImageBB: ' + (error.message || error)));
+            });
+          };
+          
+          reader.onerror = function(error) {
+            reject(new Error('Ralat membaca fail: ' + error));
+          };
+          
+          reader.readAsDataURL(file);
+        });
+      }
+
+      /**
        * Initialize page
        */
       function init() {
@@ -731,78 +836,13 @@
         // Check if new image is selected
         var playerImageFile = document.getElementById('playerImage').files[0];
         var imageUploadPromise = Promise.resolve(null);
-        var skipImageUpload = false; // Flag untuk skip upload jika timeout
 
         if (playerImageFile) {
           // Show message untuk upload image
-          showMessage('Sedang upload gambar... Ini mungkin mengambil masa beberapa saat.', 'info');
-          // Upload image first
-          var reader = new FileReader();
-          imageUploadPromise = new Promise(function(resolve, reject) {
-            reader.onload = function(e) {
-              var base64Data = e.target.result.split(',')[1];
-              var fileData = {
-                name: playerImageFile.name,
-                type: playerImageFile.type,
-                data: base64Data
-              };
-
-              var playerName = formData.name || 'Player';
-              var uploadPromise;
-              
-              if (typeof google !== 'undefined' && google.script && google.script.run) {
-                uploadPromise = new Promise(function(resolve2, reject2) {
-                  google.script.run
-                    .withSuccessHandler(resolve2)
-                    .withFailureHandler(reject2)
-                    .uploadPlayerImage(fileData, playerName, currentRowIndex);
-                });
-              } else if (typeof API !== 'undefined' && API.uploadPlayerImage) {
-                uploadPromise = API.uploadPlayerImage(fileData, playerName, currentRowIndex);
-              } else {
-                reject(new Error('API tidak tersedia'));
-                return;
-              }
-
-              uploadPromise
-                .then(function(result) {
-                  var finalResult = result;
-                  if (result && result.success !== undefined) {
-                    finalResult = result;
-                  }
-                  if (finalResult.success) {
-                    formData.imageUrl = finalResult.fileUrl;
-                    resolve(finalResult.fileUrl);
-                  } else {
-                    reject(new Error(finalResult.message || 'Ralat upload gambar'));
-                  }
-                })
-                .catch(function(error) {
-                  // If timeout, resolve dengan null (skip upload)
-                  if (skipImageUpload) {
-                    resolve(null);
-                  } else {
-                    reject(error);
-                  }
-                });
-            };
-            reader.onerror = function(error) {
-              if (skipImageUpload) {
-                resolve(null);
-              } else {
-                reject(error);
-              }
-            };
-            reader.readAsDataURL(playerImageFile);
-          }).catch(function(error) {
-            // If upload fails or timeout, skip image upload and continue with form save
-            if (skipImageUpload) {
-              return Promise.resolve(null);
-            }
-            // Show warning but continue with save
-            showMessage('Ralat upload gambar: ' + (error.message || error) + '. Maklumat akan disimpan tanpa gambar baru.', 'error');
-            return Promise.resolve(null);
-          });
+          showMessage('Sedang upload gambar ke ImageBB...', 'info');
+          
+          // Upload image to ImageBB (direct from browser)
+          imageUploadPromise = uploadToImageBB(playerImageFile);
         }
 
         // Wait for image upload (if any), then update player
