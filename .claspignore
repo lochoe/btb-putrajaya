@@ -1,23 +1,63 @@
-# Files to ignore when pushing to Apps Script
+# =============================================================================
+# .claspignore - Files yang TIDAK akan di-push ke Google Apps Script
+# =============================================================================
+#
+# PROJECT STRUCTURE:
+# ------------------
+# Apps Script Files (akan di-push):
+#   - doGet.js
+#   - jerseyBooking.js
+#   - config.js
+#   - populateCheckboxes.js
+#   - testOpenForm.js
+#   - code.js
+#   - Index.html (legacy, untuk Apps Script hosted version)
+#   - JerseyBooking.html (legacy, untuk Apps Script hosted version)
+#
+# Vercel Files (TIDAK akan di-push - ignore semua):
+#   - api/ (serverless functions)
+#   - *.html (Vercel frontend)
+#   - api.js (Vercel frontend API wrapper)
+#   - vercel.json (Vercel config)
+#
+# =============================================================================
+
+# Git files
 .git/
 .gitignore
-SYNC_TO_APPS_SCRIPT.md
+
+# Documentation
 *.md
+!README.md
+documents/
+documents/**
 
-# Frontend-only files (untuk Vercel sahaja, bukan Apps Script)
-api.js
-api-config.js
+# =============================================================================
+# VERCEL-ONLY FILES (Not for Apps Script)
+# =============================================================================
 
-# Vercel config (tidak perlu dalam Apps Script)
-vercel.json
+# Vercel Serverless Functions (ES6 modules - incompatible with Apps Script)
+api/
+api/**
+api/**/*
 
-# HTML files yang untuk Vercel sahaja (Apps Script hanya perlu Index.html dan JerseyBooking.html jika serve dari Apps Script)
+# Vercel Frontend Files
 EmailSearch.html
 ChildrenList.html
 PlayerProfile.html
+api.js
+api-config.js
 
-# Config template - jangan push kerana akan duplicate CONFIG declaration dengan config.js
+# Vercel Configuration
+vercel.json
+
+# Config Templates
 config.example.js
 
-# Note: testOpenForm.js, populateCheckboxes.js, code.js adalah utility functions,
-# bukan untuk web app utama, tapi boleh keep untuk function lain jika perlu
+# =============================================================================
+# NOTES:
+# =============================================================================
+# - Apps Script hanya perlu backend logic (doGet.js, jerseyBooking.js, etc.)
+# - Vercel handle frontend dan serverless functions
+# - File dalam root (doGet.js, config.js, etc.) adalah untuk Apps Script
+# =============================================================================

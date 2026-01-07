@@ -1,33 +1,37 @@
-# Ignore sensitive config file (contains real IDs)
-config.js
+# =============================================================================
+# .gitignore - Files yang tidak perlu dalam Git
+# =============================================================================
 
-# Ignore Vercel build files
-.vercel
-
-# Ignore utility/test files
-code.js
-populateCheckboxes.js
-testOpenForm.js
-
-# Ignore Apps Script compiled files
-*.gs
-
-# Ignore TypeScript compiled files
-*.ts
-
-# Ignore node modules (if any)
+# Dependencies
 node_modules/
+package-lock.json
+yarn.lock
 
-# Ignore clasp auth
-.clasprc.json
+# Environment files (jika ada)
+.env
+.env.local
+.env.*.local
 
-# Keep these files for GitHub:
-# - Index.html (main page)
-# - JerseyBooking.html (jersey booking form)
-# - jerseyBooking.js (backend logic)
-# - doGet.js (web app entry point)
-# - appsscript.json (Apps Script manifest)
-# - .clasp.json (clasp config - scriptId is not sensitive)
-# - config.example.js (template)
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
+# OS files
+.DS_Store
+Thumbs.db
 
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# =============================================================================
+# Note: .clasp.json dan .claspignore perlu dalam Git
+# (untuk sync dengan Apps Script project)
+# =============================================================================

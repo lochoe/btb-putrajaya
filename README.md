@@ -1,6 +1,25 @@
-# BTB Putrajaya - Jersey Booking System
+# BTB Putrajaya - Player Registration System
 
-Sistem tempahan baju untuk BTB Putrajaya menggunakan Google Apps Script.
+Sistem pendaftaran dan pengurusan pemain untuk BTB Putrajaya menggunakan Google Apps Script dan Vercel.
+
+## 📚 Documentation
+
+Semua dokumentasi lengkap ada dalam folder [`documents/`](./documents/):
+
+**Quick Links:**
+- 📖 [Project Structure](./documents/PROJECT_STRUCTURE.md) - Struktur project dan file organization
+- ⚙️ [Vercel Configuration](./documents/VERCEL_CONFIG.md) - Setup Vercel deployment
+- 📤 [Apps Script Deployment](./documents/APPS_SCRIPT_DEPLOYMENT.md) - Deploy Apps Script (kekal URL sama)
+- 🖼️ [ImageBB Setup](./documents/IMGBB_SETUP.md) - Setup ImageBB untuk upload images
+- 🔄 [Sync to Apps Script](./documents/SYNC_TO_APPS_SCRIPT.md) - Cara sync files
+
+Baca [`documents/README.md`](./documents/README.md) untuk complete documentation index.
+
+---
+
+## Overview
+
+Sistem pendaftaran dan pengurusan pemain untuk BTB Putrajaya.
 
 ## Features
 
