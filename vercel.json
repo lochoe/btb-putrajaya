@@ -46,6 +46,14 @@
     {
       "src": "/api-config.js",
       "dest": "/api-config.js"
+    },
+    {
+      "src": "/api/config",
+      "dest": "/api/config.js"
+    },
+    {
+      "src": "/api/upload-image",
+      "dest": "/api/upload-image.js"
     }
   ]
 }

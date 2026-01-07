@@ -521,57 +521,6 @@
           reader.readAsDataURL(file);
         });
       }
-       * Direct upload from browser - no server needed
-       */
-      function uploadToImageBB(file) {
-        return new Promise(function(resolve, reject) {
-          // Check file size (max 32MB for ImageBB free tier)
-          if (file.size > 32 * 1024 * 1024) {
-            reject(new Error('Saiz fail terlalu besar. Maksimum 32MB untuk ImageBB.'));
-            return;
-          }
-
-          var reader = new FileReader();
-          reader.onload = function(e) {
-            var base64Data = e.target.result.split(',')[1];
-            
-            // Upload via Vercel serverless function (API key dalam env var - selamat)
-            fetch('/api/upload-image', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                imageData: base64Data
-              })
-            })
-            .then(function(response) {
-              if (!response.ok) {
-                return response.json().then(function(err) {
-                  throw new Error(err.error || 'Upload failed');
-                });
-              }
-              return response.json();
-            })
-            .then(function(result) {
-              if (result.success && result.fileUrl) {
-                resolve(result);
-              } else {
-                reject(new Error(result.error || 'Upload failed - unknown error'));
-              }
-            })
-            .catch(function(error) {
-              reject(new Error('Ralat upload ke ImageBB: ' + (error.message || error)));
-            });
-          };
-          
-          reader.onerror = function(error) {
-            reject(new Error('Ralat membaca fail: ' + error));
-          };
-          
-          reader.readAsDataURL(file);
-        });
-      }
 
       /**
        * Initialize page
