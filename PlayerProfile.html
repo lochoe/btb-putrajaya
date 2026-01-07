@@ -194,6 +194,12 @@
         border: 1px solid #fecaca;
       }
 
+      .message.info {
+        background-color: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+      }
+
       .player-avatar-section {
         display: flex;
         gap: 20px;
@@ -719,11 +725,17 @@
         saveBtn.disabled = true;
         saveBtn.textContent = 'Menyimpan...';
 
+        // Show immediate feedback
+        showMessage('Sedang menyimpan maklumat...', 'info');
+
         // Check if new image is selected
         var playerImageFile = document.getElementById('playerImage').files[0];
         var imageUploadPromise = Promise.resolve(null);
+        var skipImageUpload = false; // Flag untuk skip upload jika timeout
 
         if (playerImageFile) {
+          // Show message untuk upload image
+          showMessage('Sedang upload gambar... Ini mungkin mengambil masa beberapa saat.', 'info');
           // Upload image first
           var reader = new FileReader();
           imageUploadPromise = new Promise(function(resolve, reject) {
@@ -765,56 +777,102 @@
                     reject(new Error(finalResult.message || 'Ralat upload gambar'));
                   }
                 })
-                .catch(reject);
+                .catch(function(error) {
+                  // If timeout, resolve dengan null (skip upload)
+                  if (skipImageUpload) {
+                    resolve(null);
+                  } else {
+                    reject(error);
+                  }
+                });
             };
-            reader.onerror = reject;
+            reader.onerror = function(error) {
+              if (skipImageUpload) {
+                resolve(null);
+              } else {
+                reject(error);
+              }
+            };
             reader.readAsDataURL(playerImageFile);
+          }).catch(function(error) {
+            // If upload fails or timeout, skip image upload and continue with form save
+            if (skipImageUpload) {
+              return Promise.resolve(null);
+            }
+            // Show warning but continue with save
+            showMessage('Ralat upload gambar: ' + (error.message || error) + '. Maklumat akan disimpan tanpa gambar baru.', 'error');
+            return Promise.resolve(null);
           });
         }
 
         // Wait for image upload (if any), then update player
-        imageUploadPromise
-          .then(function(imageUrl) {
-            if (imageUrl) {
-              formData.imageUrl = imageUrl;
-            }
+        // Set timeout untuk image upload - jika terlalu lama, skip upload image
+        var imageUploadTimeout = setTimeout(function() {
+          if (playerImageFile) {
+            skipImageUpload = true;
+            showMessage('Upload gambar mengambil masa terlalu lama. Maklumat akan disimpan tanpa gambar baru.', 'error');
+          }
+        }, 30000); // 30 seconds timeout untuk image upload
 
-            var updatePromise;
-        
-        if (isNewPlayer) {
-          // Add new player
-          if (typeof google !== 'undefined' && google.script && google.script.run) {
-            updatePromise = new Promise(function(resolve, reject) {
-              google.script.run
-                .withSuccessHandler(resolve)
-                .withFailureHandler(reject)
-                .addPlayer(formData);
-            });
-          } else if (typeof API !== 'undefined' && API.addPlayer) {
-            updatePromise = API.addPlayer(formData);
+        // Function to save player data (called after image upload or if no image)
+        function savePlayerData() {
+          var updatePromise;
+          
+          if (isNewPlayer) {
+            // Add new player
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+              updatePromise = new Promise(function(resolve, reject) {
+                google.script.run
+                  .withSuccessHandler(resolve)
+                  .withFailureHandler(reject)
+                  .addPlayer(formData);
+              });
+            } else if (typeof API !== 'undefined' && API.addPlayer) {
+              updatePromise = API.addPlayer(formData);
+            }
+          } else {
+            // Update existing player
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+              updatePromise = new Promise(function(resolve, reject) {
+                google.script.run
+                  .withSuccessHandler(resolve)
+                  .withFailureHandler(reject)
+                  .updatePlayer(currentRowIndex, formData);
+              });
+            } else if (typeof API !== 'undefined' && API.updatePlayer) {
+              updatePromise = API.updatePlayer(currentRowIndex, formData);
+            }
           }
-        } else {
-          // Update existing player
-          if (typeof google !== 'undefined' && google.script && google.script.run) {
-            updatePromise = new Promise(function(resolve, reject) {
-              google.script.run
-                .withSuccessHandler(resolve)
-                .withFailureHandler(reject)
-                .updatePlayer(currentRowIndex, formData);
-            });
-          } else if (typeof API !== 'undefined' && API.updatePlayer) {
-            updatePromise = API.updatePlayer(currentRowIndex, formData);
+
+          if (!updatePromise) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Simpan Perubahan';
+            showMessage('Error: API tidak tersedia.', 'error');
+            return Promise.reject(new Error('API tidak tersedia'));
           }
+
+          return updatePromise;
         }
 
-            if (!updatePromise) {
-              saveBtn.disabled = false;
-              saveBtn.textContent = 'Simpan Perubahan';
-              showMessage('Error: API tidak tersedia.', 'error');
-              return;
+        // Handle image upload promise
+        imageUploadPromise
+          .then(function(imageUrl) {
+            clearTimeout(imageUploadTimeout);
+            if (imageUrl) {
+              formData.imageUrl = imageUrl;
+              showMessage('Gambar berjaya diupload. Sedang menyimpan maklumat...', 'success');
             }
-
-            return updatePromise;
+            // Continue with save
+            return savePlayerData();
+          })
+          .catch(function(uploadError) {
+            // If upload fails or timeout, skip image upload and continue with form save
+            clearTimeout(imageUploadTimeout);
+            if (skipImageUpload || uploadError) {
+              showMessage('Upload gambar tidak berjaya. Maklumat akan disimpan tanpa gambar baru.', 'error');
+            }
+            // Continue with save even if upload failed
+            return savePlayerData();
           })
           .then(function(result) {
             // Handle both image upload error and update error

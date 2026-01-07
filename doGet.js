@@ -540,25 +540,37 @@ function updatePlayer(rowIndex, playerData) {
     // Get current row to preserve timestamp and email
     var currentRow = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
     
+    /**
+     * decodeFormValue
+     * What: Decode URL-encoded values (replace + with space, decodeURIComponent)
+     * Input: value: string
+     * Output: string (decoded)
+     */
+    function decodeFormValue(value) {
+      if (!value || typeof value !== 'string') return value || '';
+      // Replace + with space first (URL encoding), then decode URI
+      return decodeURIComponent(value.replace(/\+/g, ' '));
+    }
+    
     // Update row data (preserve timestamp[0] and email[1])
     // If imageUrl provided in playerData, use it; otherwise preserve original
     var imageUrl = playerData.imageUrl || currentRow[11] || '';
     
     var newRow = [
       currentRow[0], // timestamp - preserve original
-      playerData.email || currentRow[1], // email - update if provided, otherwise preserve
-      playerData.name || '',
-      playerData.age || '',
-      playerData.parentName || '',
-      playerData.parentPhone || '',
-      playerData.address || '',
-      playerData.school || '',
-      playerData.skillLevel || '',
-      playerData.achievement || '',
-      playerData.parentConsent || '',
+      decodeFormValue(playerData.email) || currentRow[1], // email - decode + update if provided
+      decodeFormValue(playerData.name) || '',
+      decodeFormValue(playerData.age) || '',
+      decodeFormValue(playerData.parentName) || '',
+      decodeFormValue(playerData.parentPhone) || '',
+      decodeFormValue(playerData.address) || '',
+      decodeFormValue(playerData.school) || '',
+      decodeFormValue(playerData.skillLevel) || '',
+      decodeFormValue(playerData.achievement) || '',
+      decodeFormValue(playerData.parentConsent) || '',
       imageUrl, // imageUrl - update if provided, otherwise preserve
-      playerData.icNumber || currentRow[12] || '', // icNumber - update if provided, otherwise preserve
-      playerData.icDocumentUrl || currentRow[13] || '' // icDocumentUrl - update if provided, otherwise preserve (column 13)
+      decodeFormValue(playerData.icNumber) || currentRow[12] || '', // icNumber - decode + update
+      playerData.icDocumentUrl || currentRow[13] || '' // icDocumentUrl - update if provided
     ];
 
     // Write to sheet (starting from column 1)
@@ -654,22 +666,34 @@ function addPlayer(playerData) {
       return { success: false, message: 'Sheet not found' };
     }
 
+    /**
+     * decodeFormValue
+     * What: Decode URL-encoded values (replace + with space, decodeURIComponent)
+     * Input: value: string
+     * Output: string (decoded)
+     */
+    function decodeFormValue(value) {
+      if (!value || typeof value !== 'string') return value || '';
+      // Replace + with space first (URL encoding), then decode URI
+      return decodeURIComponent(value.replace(/\+/g, ' '));
+    }
+    
     // Prepare new row
     var timestamp = new Date();
     var newRow = [
       timestamp, // timestamp
-      playerData.email || '',
-      playerData.name || '',
-      playerData.age || '',
-      playerData.parentName || '',
-      playerData.parentPhone || '',
-      playerData.address || '',
-      playerData.school || '',
-      playerData.skillLevel || '',
-      playerData.achievement || '',
-      playerData.parentConsent || '',
+      decodeFormValue(playerData.email) || '',
+      decodeFormValue(playerData.name) || '',
+      decodeFormValue(playerData.age) || '',
+      decodeFormValue(playerData.parentName) || '',
+      decodeFormValue(playerData.parentPhone) || '',
+      decodeFormValue(playerData.address) || '',
+      decodeFormValue(playerData.school) || '',
+      decodeFormValue(playerData.skillLevel) || '',
+      decodeFormValue(playerData.achievement) || '',
+      decodeFormValue(playerData.parentConsent) || '',
       playerData.imageUrl || '', // imageUrl - can be set if uploaded before save
-      playerData.icNumber || '', // icNumber
+      decodeFormValue(playerData.icNumber) || '', // icNumber
       playerData.icDocumentUrl || '' // icDocumentUrl - can be set if uploaded before save (column 13)
     ];
 
